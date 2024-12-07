@@ -1,29 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" class="html-area">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+    <!-- CSS -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"
+    />
+
+    <!-- Javascripts -->
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"
+    ></script>
     <title>Tauri + SvelteKit + Typescript App</title>
     %sveltekit.head%
     <style>
       :root {
-        --primary-color: #007AFF;
+        --primary-color: #007aff;
         --text-color: #f3f4f6;
       }
 
-      .html-area{
+      .html-area {
         background: transparent;
         height: 100%;
       }
 
-      .body-area{
+      .body-area {
         margin: 0px;
         height: 100%;
         color: var(--text-color);
       }
-      </style>
+
+      .overflow-auto-style {
+        overflow: auto;
+        scrollbar-color: var(--primary-color) transparent;
+        scrollbar-width: thin;
+      }
+    </style>
   </head>
   <body class="body-area" data-sveltekit-preload-data="hover">
     <div style="display: contents">%sveltekit.body%</div>

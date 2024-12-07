@@ -59,7 +59,7 @@
   }
 
   function openRepo() {
-    console.log(repoLocation)
+    console.log(repoLocation);
     invoke("open_repo_window", { repoLocation: repoLocation });
   }
 </script>
@@ -197,6 +197,7 @@
     background: transparent;
     border: none;
     color: var(--text-color);
+    cursor: pointer;
   }
   /* HTML: <div class="loader"></div> */
   .loader {
