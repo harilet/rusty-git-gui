@@ -108,7 +108,6 @@ fn get_commit(repo_location: String, branch_name: String) -> Vec<[std::string::S
 
 #[tauri::command]
 fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
-    println!("{:#?}", commit_id);
     let repo = Repository::open(repo_location).unwrap();
 
     let mut opts = git2::DiffOptions::new();
@@ -131,23 +130,21 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
         .tree()
         .unwrap();
 
-    let diff = repo
-        .diff_tree_to_tree(Some(&parent_tree), Some(&tree), Some(&mut opts))
-        .unwrap();
-
-    diff.print(DiffFormat::Patch, |_d, _h, l| {
-        let mut diff_data: String = "".to_string();
-        match l.origin() {
-            '+' | '-' | ' ' => {
-                diff_data.push(l.origin());
+    let mut diff_data: String = "".to_string();
+    repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), Some(&mut opts))
+        .unwrap()
+        .print(DiffFormat::Patch, |_d, _h, l| {
+            match l.origin() {
+                '+' | '-' | ' ' => {
+                    diff_data.push(l.origin());
+                }
+                _ => {}
             }
-            _ => {}
-        }
-        diff_data.push_str(str::from_utf8(l.content()).unwrap());
-        app.emit("changes", diff_data.clone()).unwrap();
-        true
-    })
-    .unwrap();
+            diff_data.push_str(str::from_utf8(l.content()).unwrap());
+            true
+        })
+        .unwrap();
+    app.emit("changes", diff_data.clone()).unwrap();
 }
 
 #[tauri::command]
@@ -172,15 +169,12 @@ fn get_unstaged_files(repo_location: String) -> Vec<String> {
         .patience(true)
         .minimal(true)
         .include_ignored(false)
-        .include_untracked(false)
+        .include_untracked(true)
         .ignore_whitespace_eol(false);
     let unstaged_diff = repo
         .diff_index_to_workdir(Some(&repo.index().unwrap()), Some(&mut diff_opts))
         .unwrap();
     for diff in unstaged_diff.deltas().into_iter() {
-        println!("path: {:#?}",diff.new_file()
-        .path()
-        .unwrap());
         path_list.push(
             diff.new_file()
                 .path()
@@ -233,21 +227,41 @@ fn get_unstaged_changes(app: AppHandle, repo_location: String, path: String) {
         .include_untracked(false)
         .ignore_whitespace_eol(false)
         .pathspec(path.clone());
+
+    let mut diff_data: String = "".to_string();
+
     repo.diff_index_to_workdir(Some(&repo.index().unwrap()), Some(&mut diff_opts))
         .unwrap()
         .print(DiffFormat::Patch, |_d, _h, l| {
-            let mut diff_data: String = "".to_string();
             match l.origin() {
                 '+' | '-' | ' ' => {
                     diff_data.push(l.origin());
                 }
                 _ => {}
             }
+
+            match l.old_lineno() {
+                Some(num) => {
+                    diff_data.push_str(&format!(" {}", num));
+                }
+                None => {
+                    diff_data.push_str(&format!(" _"));
+                }
+            }
+
+            match l.new_lineno() {
+                Some(num) => {
+                    diff_data.push_str(&format!(" {}", num));
+                }
+                None => {
+                    diff_data.push_str(&format!(" _"));
+                }
+            }
             diff_data.push_str(str::from_utf8(l.content()).unwrap());
-            app.emit("changes", diff_data.clone()).unwrap();
             true
         })
         .unwrap();
+    app.emit("changes", diff_data.clone()).unwrap();
 }
 
 #[tauri::command]
@@ -264,6 +278,7 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
         .pathspec(path.clone());
     let old_tree = repo.head().unwrap().peel_to_tree().unwrap();
 
+    let mut diff_data: String = "".to_string();
     repo.diff_tree_to_index(
         Some(&old_tree),
         Some(&repo.index().unwrap()),
@@ -271,22 +286,40 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
     )
     .unwrap()
     .print(DiffFormat::Patch, |_d, _h, l| {
-        let mut diff_data: String = "".to_string();
         match l.origin() {
             '+' | '-' | ' ' => {
                 diff_data.push(l.origin());
             }
             _ => {}
         }
+
+        match l.old_lineno() {
+            Some(num) => {
+                diff_data.push_str(&format!(" {}", num));
+            }
+            None => {
+                diff_data.push_str(&format!(" _"));
+            }
+        }
+
+        match l.new_lineno() {
+            Some(num) => {
+                diff_data.push_str(&format!(" {} ", num));
+            }
+            None => {
+                diff_data.push_str(&format!(" _ "));
+            }
+        }
         diff_data.push_str(str::from_utf8(l.content()).unwrap());
-        app.emit("changes", diff_data.clone()).unwrap();
         true
     })
     .unwrap();
+    println!("{}",diff_data);
+    app.emit("changes", diff_data.clone()).unwrap();
 }
 
 #[tauri::command]
-fn add_file_index(repo_location: String, path: String){
+fn add_file_index(repo_location: String, path: String) {
     let repo = Repository::open(repo_location).unwrap();
     let mut index = repo.index().unwrap();
     index.add_path(Path::new(&path)).unwrap();
@@ -295,16 +328,17 @@ fn add_file_index(repo_location: String, path: String){
 }
 
 #[tauri::command]
-fn remove_file_index(repo_location: String, path: String){
+fn remove_file_index(repo_location: String, path: String) {
     let repo = Repository::open(repo_location).unwrap();
-    let head=repo.head().unwrap();
-    let commit=head.peel_to_commit().unwrap();
-    repo.reset_default(Some(commit.as_object()), &[path]).unwrap();
+    let head = repo.head().unwrap();
+    let commit = head.peel_to_commit().unwrap();
+    repo.reset_default(Some(commit.as_object()), &[path])
+        .unwrap();
     return;
 }
 
 #[tauri::command]
-fn make_commit(repo_location: String, message: String){
+fn make_commit(repo_location: String, message: String) {
     let repo = Repository::open(repo_location).unwrap();
     let mut index = repo.index().unwrap();
     let oid = index.write_tree().unwrap();

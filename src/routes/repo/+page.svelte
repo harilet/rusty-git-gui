@@ -9,7 +9,6 @@
   import "diff2html/bundles/css/diff2html.min.css";
   import { ColorSchemeType } from "diff2html/lib/types";
   import Add from "$lib/add.svelte";
-  import type { MouseEventHandler } from "svelte/elements";
   import Remove from "$lib/remove.svelte";
   import Diff from "$lib/diff.svelte";
 
