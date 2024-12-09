@@ -7,7 +7,7 @@
   $: {
     let diffAsLines = splitLines();
     if (diff != "") {
-      for (var i = 1; i < diffAsLines.length; i++) {
+      for (var i = 0; i < diffAsLines.length; i++) {
         let change = diffAsLines[i];
 
         if (startCharIsAdd(change)) {
@@ -49,6 +49,10 @@
           newChanges = [...newChanges, newLine];
         }
         if (startCharIsAt(diffAsLines[i + 1])) {
+          oldChanges = [...oldChanges, " ", " "];
+          newChanges = [...newChanges, " ", " "];
+        }
+        if(i==diffAsLines.length-1){
           oldChanges = [...oldChanges, " ", " "];
           newChanges = [...newChanges, " ", " "];
         }

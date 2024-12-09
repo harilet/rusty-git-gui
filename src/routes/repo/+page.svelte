@@ -4,10 +4,6 @@
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
   import { listen } from "@tauri-apps/api/event";
-
-  import * as Diff2Html from "diff2html";
-  import "diff2html/bundles/css/diff2html.min.css";
-  import { ColorSchemeType } from "diff2html/lib/types";
   import Add from "$lib/add.svelte";
   import Remove from "$lib/remove.svelte";
   import Diff from "$lib/diff.svelte";
@@ -22,18 +18,6 @@
   $: stagedFiles = [];
   $: changes = "";
   $: makeCommitMessage = "";
-
-  let configuration: Diff2Html.Diff2HtmlConfig = {
-    drawFileList: false,
-    matching: "words",
-    colorScheme: ColorSchemeType.DARK,
-    outputFormat: "side-by-side",
-    maxLineSizeInBlockForComparison: 10,
-  };
-
-  function drawDiff() {
-    return Diff2Html.html(changes, configuration);
-  }
 
   onMount(() => {
     const hasLocation = $page.url.searchParams.has("location");
@@ -188,8 +172,8 @@
     </div>
     <div class="main-area">
       {#if mainTab == "graph"}
-        <div style="display: flex;">
-          <div class="overflow-auto-style" style="width: 50%;">
+        <div class="graph-area">
+          <div class="overflow-auto-style commit-message-area">
             {#each commitMessages as commitMessage}
               <button
                 class="commit-message"
@@ -212,18 +196,15 @@
               </button>
             {/each}
           </div>
-          <div style="width: 50%;">
-            {@html drawDiff()}
+          <div class="commit-changes">
+            <Diff diff={changes} />
           </div>
         </div>
       {/if}
       {#if mainTab == "commit"}
         <div class="main-commit-area overflow-auto-style">
           <div class="file-changes overflow-auto-style">
-            
-                <!-- {@html drawDiff()} -->
-                 <Diff diff={changes}/>
-              
+            <Diff diff={changes} />
           </div>
           <div class="change-files">
             <div class="unstaged-change-files">
@@ -282,6 +263,22 @@
   .app-bar {
     width: 100%;
     height: 30px;
+  }
+
+  .graph-area {
+    display: flex;
+    height: 100%;
+  }
+
+  .commit-changes {
+    width: 50%;
+    height: 100%;
+    overflow: auto;
+  }
+
+  .commit-message-area {
+    width: 50%;
+    height: 100%;
   }
 
   .container {
@@ -351,7 +348,7 @@
   .header {
     display: flex;
     flex-direction: column;
-    width: -webkit-fill-available;
+    width: calc(100% - 250px);
     .header-buttons {
       display: flex;
       margin-bottom: 20px;
@@ -408,7 +405,7 @@
     overflow: auto;
   }
 
-  .file-changes{
+  .file-changes {
     height: calc(65% - 70px);
   }
 </style>

@@ -140,6 +140,25 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
                 }
                 _ => {}
             }
+
+            match l.old_lineno() {
+                Some(num) => {
+                    diff_data.push_str(&format!(" {}", num));
+                }
+                None => {
+                    diff_data.push_str(&format!(" _"));
+                }
+            }
+    
+            match l.new_lineno() {
+                Some(num) => {
+                    diff_data.push_str(&format!(" {} ", num));
+                }
+                None => {
+                    diff_data.push_str(&format!(" _ "));
+                }
+            }
+            
             diff_data.push_str(str::from_utf8(l.content()).unwrap());
             true
         })
