@@ -18,25 +18,31 @@
   $: stagedFiles = [];
   $: changes = "";
   $: makeCommitMessage = "";
+  $: force = false;
+  $: newBranchName = "";
 
   onMount(() => {
     const hasLocation = $page.url.searchParams.has("location");
     if (hasLocation) {
       location = $page.url.searchParams.get("location");
-      invoke("get_branches", { repoLocation: location }).then(function (
-        data: any
-      ) {
-        for (let i = 0; i < data["branches"].length; i++) {
-          branchList = [...branchList, data["branches"][i][0]];
-        }
-        selectBranch(data["default"]);
-      });
+      getAllBranchs();
     }
 
     listen("changes", function (data) {
       changes = changes + (data.payload as string);
     });
   });
+
+  function getAllBranchs() {
+    invoke("get_branches", { repoLocation: location }).then(function (
+      data: any
+    ) {
+      for (let i = 0; i < data["branches"].length; i++) {
+        branchList = [...branchList, data["branches"][i][0]];
+      }
+      selectBranch(data["default"]);
+    });
+  }
 
   function selectBranch(branchName: string) {
     selectedBranch = branchName;
@@ -133,13 +139,60 @@
       getChangeFiles();
     });
   }
+
+  function newBranchBtn() {
+    showDialog = true;
+    dialog.showModal();
+  }
+
+  function creatBranch() {
+    invoke("new_branch", {
+      repoLocation: location,
+      force: force,
+      newBranchName: newBranchName,
+      fromBranchName: selectedBranch,
+    }).then(function () {
+      branchList = [];
+      getAllBranchs();
+    });
+  }
+
+  $: showDialog = false;
+  let dialog: HTMLDialogElement;
 </script>
 
 <div data-tauri-drag-region class="app-bar">
   <Titlebar />
 </div>
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+<dialog
+  bind:this={dialog}
+  on:click={(_) => dialog.close()}
+  style="padding: 0px;width: 45%; height: 30%;"
+>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div style="width: 100%; height: 100%;" on:click={(e) => e.stopPropagation()}>
+    <div>
+      <div>
+        new branch name <input bind:value={newBranchName} />
+      </div>
+      <div>
+        from branch <input bind:value={selectedBranch} />
+      </div>
+      <div>
+        Force <input type="checkbox" bind:checked={force} />
+      </div>
+
+      <button on:click={creatBranch}>Create Branch</button>
+    </div>
+  </div>
+</dialog>
+
 <main class="container overflow-auto-style">
   <div class="branch-area overflow-auto-style">
+    <button class="branch-name" on:click={newBranchBtn}>
+      <Add color="var(--text-color)" /> New branch
+    </button>
     {#each branchList as branch}
       <button
         on:dblclick={() => selectBranch(branch)}
@@ -308,6 +361,8 @@
     text-align: start;
     text-overflow: ellipsis;
     overflow: hidden;
+    display: flex;
+    align-items: center;
   }
 
   .branch-name:hover {

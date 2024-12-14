@@ -149,7 +149,7 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
                     diff_data.push_str(&format!(" _"));
                 }
             }
-    
+
             match l.new_lineno() {
                 Some(num) => {
                     diff_data.push_str(&format!(" {} ", num));
@@ -158,7 +158,7 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
                     diff_data.push_str(&format!(" _ "));
                 }
             }
-            
+
             diff_data.push_str(str::from_utf8(l.content()).unwrap());
             true
         })
@@ -333,7 +333,7 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
         true
     })
     .unwrap();
-    println!("{}",diff_data);
+    println!("{}", diff_data);
     app.emit("changes", diff_data.clone()).unwrap();
 }
 
@@ -375,6 +375,26 @@ fn make_commit(repo_location: String, message: String) {
     .unwrap();
     return;
 }
+#[tauri::command]
+fn new_branch(
+    repo_location: String,
+    from_branch_name: String,
+    new_branch_name: String,
+    force: bool,
+) {
+    let repo = Repository::open(repo_location).unwrap();
+    println!("{},{},{}", from_branch_name, new_branch_name, force);
+    let current_branch = repo
+        .find_branch(&from_branch_name, BranchType::Local)
+        .unwrap();
+
+    repo.branch(
+        &new_branch_name,
+        &current_branch.get().peel_to_commit().unwrap(),
+        force,
+    )
+    .unwrap();
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -401,7 +421,8 @@ pub fn run() {
             get_staged_changes,
             add_file_index,
             remove_file_index,
-            make_commit
+            make_commit,
+            new_branch,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
