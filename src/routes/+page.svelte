@@ -7,6 +7,8 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
+  import { Button } from "$lib/components/ui/button";
+  import Input from "$lib/components/ui/input/input.svelte";
 
   $: pageMode = "project";
 
@@ -159,12 +161,12 @@
     {:else if pageMode == "open"}
       <div>
         <h2>Open Projects</h2>
-        <div>
-          Location <input bind:value={repoLocation} />
-          <button on:click={openFileSelector}>open FIle</button>
+        <div class="flex w-full max-w-sm items-center space-x-2">
+          <Input bind:value={repoLocation} placeholder="repo location" />
+          <Button on:click={openFileSelector} variant="outline">Open Exploer</Button>
         </div>
         <div>
-          <button on:click={openRepo}> open </button>
+          <Button on:click={openRepo} disabled="{repoLocation==''}">Open</Button>
         </div>
       </div>
     {:else if pageMode == "create"}
@@ -176,6 +178,13 @@
 </main>
 
 <style>
+
+.container {
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+    max-width: none;
+  }
   .app-bar {
     width: 100%;
     height: 30px;

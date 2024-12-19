@@ -7,6 +7,12 @@
   import Add from "$lib/add.svelte";
   import Remove from "$lib/remove.svelte";
   import Diff from "$lib/diff.svelte";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import { Button, buttonVariants } from "$lib/components/ui/button";
+  import { Input } from "$lib/components/ui/input";
+  import { Textarea } from "$lib/components/ui/textarea";
+  import { Label } from "$lib/components/ui/label";
+  import { Checkbox } from "$lib/components/ui/checkbox";
 
   let location: String | null;
   let branchList: any[] = [];
@@ -164,35 +170,39 @@
 <div data-tauri-drag-region class="app-bar">
   <Titlebar />
 </div>
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-<dialog
-  bind:this={dialog}
-  on:click={(_) => dialog.close()}
-  style="padding: 0px;width: 45%; height: 30%;"
->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div style="width: 100%; height: 100%;" on:click={(e) => e.stopPropagation()}>
-    <div>
-      <div>
-        new branch name <input bind:value={newBranchName} />
-      </div>
-      <div>
-        from branch <input bind:value={selectedBranch} />
-      </div>
-      <div>
-        Force <input type="checkbox" bind:checked={force} />
-      </div>
-
-      <button on:click={creatBranch}>Create Branch</button>
-    </div>
-  </div>
-</dialog>
 
 <main class="container overflow-auto-style">
   <div class="branch-area overflow-auto-style">
-    <button class="branch-name" on:click={newBranchBtn}>
+    <Dialog.Root>
+      <Dialog.Trigger class={buttonVariants({ variant: "default" })}>
+        New Branch
+      </Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Header>
+          <Dialog.Title>New Branch</Dialog.Title>
+          <Dialog.Description>
+            <div class="flex flex-col">
+              <div class="flex w-full max-w-sm flex-col gap-1.5">
+                <Label for="email">New Branch Name</Label>
+                <Input bind:value={newBranchName} placeholder="Name" />
+              </div>
+              <div class="flex w-full max-w-sm flex-col gap-1.5">
+                <Label for="email">From Branch</Label>
+                <Input bind:value={selectedBranch} placeholder="Branch" />
+              </div>
+              <div class="flex w-full max-w-sm flex-col gap-1.5">
+                <Label for="email">Force</Label>
+                <Checkbox bind:checked={force} />
+              </div>
+              <Button on:click={creatBranch}> Create</Button>
+            </div>
+          </Dialog.Description>
+        </Dialog.Header>
+      </Dialog.Content>
+    </Dialog.Root>
+    <!-- <button class="branch-name" on:click={newBranchBtn}>
       <Add color="var(--text-color)" /> New branch
-    </button>
+    </button> -->
     {#each branchList as branch}
       <button
         on:dblclick={() => selectBranch(branch)}
@@ -302,9 +312,9 @@
             </div>
           </div>
 
-          <div style="height: 70px;">
-            <textarea bind:value={makeCommitMessage}> </textarea>
-            <button on:click={makeCommit}> commit </button>
+          <div style="height: 16%;" class="grid w-full gap-2">
+            <Textarea placeholder="Type your message here." />
+              <Button on:click={makeCommit}>commit</Button>            
           </div>
         </div>
       {/if}
@@ -338,6 +348,9 @@
     height: calc(100% - 30px);
     width: 100%;
     display: flex;
+    padding: 0px;
+    margin: 0px;
+    max-width: none;
   }
 
   .branch-area {
@@ -461,6 +474,6 @@
   }
 
   .file-changes {
-    height: calc(65% - 70px);
+    height: 49%;
   }
 </style>
