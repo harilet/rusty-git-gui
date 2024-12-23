@@ -13,6 +13,7 @@
   import { Textarea } from "$lib/components/ui/textarea";
   import { Label } from "$lib/components/ui/label";
   import { Checkbox } from "$lib/components/ui/checkbox";
+  import * as ContextMenu from "$lib/components/ui/context-menu";
 
   let location: String | null;
   let branchList: any[] = [];
@@ -26,6 +27,7 @@
   $: makeCommitMessage = "";
   $: force = false;
   $: newBranchName = "";
+  $: newBranchDialog = false;
 
   onMount(() => {
     const hasLocation = $page.url.searchParams.has("location");
@@ -146,11 +148,6 @@
     });
   }
 
-  function newBranchBtn() {
-    showDialog = true;
-    dialog.showModal();
-  }
-
   function creatBranch() {
     invoke("new_branch", {
       repoLocation: location,
@@ -160,11 +157,31 @@
     }).then(function () {
       branchList = [];
       getAllBranchs();
+      newBranchDialog = false;
     });
   }
 
-  $: showDialog = false;
-  let dialog: HTMLDialogElement;
+  function renameBranch(branch: string) {
+    invoke("rename_branch", {
+      repoLocation: location,
+      branchName: branch,
+      newBranchName: newBranchName,
+      force: force,
+    }).then(function () {
+      branchList = [];
+      getAllBranchs();
+    });
+  }
+
+  function deleteBranch(branch: string) {
+    invoke("delete_branch", {
+      repoLocation: location,
+      branchName: branch,
+    }).then(function () {
+      branchList = [];
+      getAllBranchs();
+    });
+  }
 </script>
 
 <div data-tauri-drag-region class="app-bar">
@@ -173,8 +190,10 @@
 
 <main class="container overflow-auto-style">
   <div class="branch-area overflow-auto-style">
-    <Dialog.Root>
-      <Dialog.Trigger class={buttonVariants({ variant: "default" })}>
+    <Dialog.Root bind:open={newBranchDialog}>
+      <Dialog.Trigger
+        class={buttonVariants({ variant: "default", size: "lg" })}
+      >
         New Branch
       </Dialog.Trigger>
       <Dialog.Content>
@@ -194,22 +213,83 @@
                 <Label for="email">Force</Label>
                 <Checkbox bind:checked={force} />
               </div>
-              <Button on:click={creatBranch}> Create</Button>
+              <Button variant="outline" on:click={creatBranch} size="lg"
+                >Create</Button
+              >
             </div>
           </Dialog.Description>
         </Dialog.Header>
       </Dialog.Content>
     </Dialog.Root>
-    <!-- <button class="branch-name" on:click={newBranchBtn}>
-      <Add color="var(--text-color)" /> New branch
-    </button> -->
+
     {#each branchList as branch}
-      <button
-        on:dblclick={() => selectBranch(branch)}
-        class="branch-name {selectedBranch == branch ? 'branch-selected' : ''}"
-      >
-        {branch}
-      </button>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger>
+          <button
+            on:dblclick={() => selectBranch(branch)}
+            class="branch-name {selectedBranch == branch
+              ? 'branch-selected'
+              : ''}"
+          >
+            {branch}
+          </button>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <Dialog.Root>
+            <Dialog.Trigger
+              class={buttonVariants({ variant: "ghost", size: "lg" })}
+            >
+              Rename
+            </Dialog.Trigger>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>
+                  <ContextMenu.Item>Rename</ContextMenu.Item>
+                </Dialog.Title>
+                <Dialog.Description>
+                  <div class="flex flex-col">
+                    <div class="flex w-full max-w-sm flex-col gap-1.5">
+                      <Label for="email">Rename</Label>
+                      <Input bind:value={newBranchName} placeholder="Rename" />
+                    </div>
+                    <div class="flex w-full max-w-sm flex-col gap-1.5">
+                      <Label for="email">Force</Label>
+                      <Checkbox bind:checked={force} />
+                    </div>
+                    <Button
+                      variant="outline"
+                      on:click={(_) => renameBranch(branch)}>Rename</Button
+                    >
+                  </div>
+                </Dialog.Description>
+              </Dialog.Header>
+            </Dialog.Content>
+          </Dialog.Root>
+
+          <Dialog.Root>
+            <Dialog.Trigger
+              class={buttonVariants({ variant: "ghost", size: "lg" })}
+            >
+              Delete
+            </Dialog.Trigger>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>
+                  <ContextMenu.Item>Delete {branch}?</ContextMenu.Item>
+                </Dialog.Title>
+                <Dialog.Description>
+                  <div class="flex flex-col">
+                    <Button
+                      variant="outline"
+                      on:click={(_) => deleteBranch(branch)}>Delete</Button
+                    >
+                  </div>
+                </Dialog.Description>
+              </Dialog.Header>
+            </Dialog.Content>
+          </Dialog.Root>
+        </ContextMenu.Content>
+      </ContextMenu.Root>
     {/each}
   </div>
   <div class="header">
@@ -314,7 +394,7 @@
 
           <div style="height: 16%;" class="grid w-full gap-2">
             <Textarea placeholder="Type your message here." />
-              <Button on:click={makeCommit}>commit</Button>            
+            <Button variant="outline" on:click={makeCommit}>commit</Button>
           </div>
         </div>
       {/if}

@@ -396,6 +396,28 @@ fn new_branch(
     .unwrap();
 }
 
+#[tauri::command]
+fn delete_branch(
+    repo_location: String,
+    branch_name: String,
+) {
+    let repo = Repository::open(repo_location).unwrap();
+    let mut branch=repo.find_branch(&branch_name, BranchType::Local).unwrap();
+    branch.delete().unwrap();
+}
+
+#[tauri::command]
+fn rename_branch(
+    repo_location: String,
+    branch_name: String,
+    new_branch_name: String,
+    force: bool,
+) {
+    let repo = Repository::open(repo_location).unwrap();
+    let mut branch=repo.find_branch(&branch_name, BranchType::Local).unwrap();
+    branch.rename(&new_branch_name, force).unwrap();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let exe_path = get_exe_dir();
@@ -423,6 +445,8 @@ pub fn run() {
             remove_file_index,
             make_commit,
             new_branch,
+            delete_branch,
+            rename_branch,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();

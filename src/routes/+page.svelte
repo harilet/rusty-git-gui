@@ -166,7 +166,7 @@
           <Button on:click={openFileSelector} variant="outline">Open Exploer</Button>
         </div>
         <div>
-          <Button on:click={openRepo} disabled="{repoLocation==''}">Open</Button>
+          <Button variant="outline" on:click={openRepo} disabled="{repoLocation==''}">Open</Button>
         </div>
       </div>
     {:else if pageMode == "create"}
