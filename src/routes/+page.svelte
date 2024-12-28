@@ -9,6 +9,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { Button } from "$lib/components/ui/button";
   import Input from "$lib/components/ui/input/input.svelte";
+  import { Label } from "$lib/components/ui/label";
 
   $: pageMode = "project";
 
@@ -134,52 +135,70 @@
       <div class="loader"></div>
     {/if}
   </div>
-  <div>
+  <div class="m-4 w-3/6">
     {#if pageMode == "project"}
-      <div>
-        <h2>Recent Projects</h2>
+      <div class="grid w-full items-center gap-4">
+        <div class="block font-semibold">Recent Projects</div>
       </div>
     {:else if pageMode == "clone"}
-      <div>
-        <h2>Clone Projects</h2>
-        <div>
-          <div>
-            URL<input bind:value={repoUrl} />
-          </div>
-          <div>
-            Location <input bind:value={repoLocation} />
-            <button on:click={openFileSelector}>open File</button>
-          </div>
-          <div>
-            Name <input bind:value={repoName} />
-          </div>
-          <div>
-            <button on:click={cloneProject}> Clone </button>
+      <div class="grid w-full items-center gap-4">
+        <div class="block font-semibold">Clone Project</div>
+
+        <div class="flex flex-col space-y-1.5">
+          <Label for="name">URL</Label>
+          <Input
+            bind:value={repoUrl}
+            id="name"
+            placeholder="Remote project URL"
+          />
+        </div>
+        <div class="flex flex-col space-y-1.5">
+          <Label for="name">Location</Label>
+          <div class="flex items-center space-x-2 w-full">
+            <Input
+              bind:value={repoLocation}
+              placeholder="Location of the project"
+            />
+            <Button on:click={openFileSelector} variant="outline"
+              >Open Exploer</Button
+            >
           </div>
         </div>
+        <div class="flex flex-col space-y-1.5">
+          <Label for="name">Name</Label>
+          <Input
+            bind:value={repoName}
+            id="name"
+            placeholder="Name of your project"
+          />
+        </div>
+        <Button variant="outline" on:click={cloneProject}>Clone</Button>
       </div>
     {:else if pageMode == "open"}
-      <div>
-        <h2>Open Projects</h2>
-        <div class="flex w-full max-w-sm items-center space-x-2">
+      <div class="grid w-full items-center gap-4">
+        <div class="block font-semibold">Open Projects</div>
+        <div class="flex items-center space-x-2">
           <Input bind:value={repoLocation} placeholder="repo location" />
-          <Button on:click={openFileSelector} variant="outline">Open Exploer</Button>
+          <Button on:click={openFileSelector} variant="outline"
+            >Open Exploer</Button
+          >
         </div>
-        <div>
-          <Button variant="outline" on:click={openRepo} disabled="{repoLocation==''}">Open</Button>
-        </div>
+        <Button
+          variant="outline"
+          on:click={openRepo}
+          disabled={repoLocation == ""}>Open</Button
+        >
       </div>
     {:else if pageMode == "create"}
-      <div>
-        <h2>Create Repo</h2>
+      <div class="grid w-full items-center gap-4">
+        <div class="block font-semibold">Create New Repo</div>
       </div>
     {/if}
   </div>
 </main>
 
 <style>
-
-.container {
+  .container {
     width: 100%;
     padding: 0px;
     margin: 0px;
