@@ -14,6 +14,7 @@
   import { Label } from "$lib/components/ui/label";
   import { Checkbox } from "$lib/components/ui/checkbox";
   import * as ContextMenu from "$lib/components/ui/context-menu";
+  import * as Resizable from "$lib/components/ui/resizable/index.js";
 
   let location: String | null;
   let branchList: any[] = [];
@@ -189,217 +190,234 @@
 </div>
 
 <main class="container overflow-auto-style">
-  <div class="branch-area overflow-auto-style">
-    <Dialog.Root bind:open={newBranchDialog}>
-      <Dialog.Trigger
-        class={buttonVariants({ variant: "default", size: "lg" })}
-      >
-        New Branch
-      </Dialog.Trigger>
-      <Dialog.Content>
-        <Dialog.Header>
-          <Dialog.Title>New Branch</Dialog.Title>
-          <Dialog.Description>
-            <div class="flex flex-col">
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <Label for="email">New Branch Name</Label>
-                <Input bind:value={newBranchName} placeholder="Name" />
-              </div>
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <Label for="email">From Branch</Label>
-                <Input bind:value={selectedBranch} placeholder="Branch" />
-              </div>
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <Label for="email">Force</Label>
-                <Checkbox bind:checked={force} />
-              </div>
-              <Button variant="outline" on:click={creatBranch} size="lg"
-                >Create</Button
-              >
-            </div>
-          </Dialog.Description>
-        </Dialog.Header>
-      </Dialog.Content>
-    </Dialog.Root>
-
-    {#each branchList as branch}
-      <ContextMenu.Root>
-        <ContextMenu.Trigger>
-          <button
-            on:dblclick={() => selectBranch(branch)}
-            class="branch-name {selectedBranch == branch
-              ? 'branch-selected'
-              : ''}"
-          >
-            {branch}
-          </button>
-        </ContextMenu.Trigger>
-        <ContextMenu.Content>
-          <Dialog.Root>
-            <Dialog.Trigger
-              class={buttonVariants({ variant: "ghost", size: "lg" })}
-            >
-              Rename
-            </Dialog.Trigger>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>
-                  <ContextMenu.Item>Rename</ContextMenu.Item>
-                </Dialog.Title>
-                <Dialog.Description>
-                  <div class="flex flex-col">
-                    <div class="flex w-full max-w-sm flex-col gap-1.5">
-                      <Label for="email">Rename</Label>
-                      <Input bind:value={newBranchName} placeholder="Rename" />
-                    </div>
-                    <div class="flex w-full max-w-sm flex-col gap-1.5">
-                      <Label for="email">Force</Label>
-                      <Checkbox bind:checked={force} />
-                    </div>
-                    <Button
-                      variant="outline"
-                      on:click={(_) => renameBranch(branch)}>Rename</Button
-                    >
-                  </div>
-                </Dialog.Description>
-              </Dialog.Header>
-            </Dialog.Content>
-          </Dialog.Root>
-
-          <Dialog.Root>
-            <Dialog.Trigger
-              class={buttonVariants({ variant: "ghost", size: "lg" })}
-            >
-              Delete
-            </Dialog.Trigger>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>
-                  <ContextMenu.Item>Delete {branch}?</ContextMenu.Item>
-                </Dialog.Title>
-                <Dialog.Description>
-                  <div class="flex flex-col">
-                    <Button
-                      variant="outline"
-                      on:click={(_) => deleteBranch(branch)}>Delete</Button
-                    >
-                  </div>
-                </Dialog.Description>
-              </Dialog.Header>
-            </Dialog.Content>
-          </Dialog.Root>
-        </ContextMenu.Content>
-      </ContextMenu.Root>
-    {/each}
-  </div>
-  <div class="header">
-    <div class="header-buttons">
-      <button
-        class="item"
-        on:click={(_) => tabChange("graph")}
-        style="color:{mainTab == 'graph'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
-      >
-        Graph
-      </button>
-      <button
-        class="item"
-        on:click={(_) => tabChange("commit")}
-        style="color:{mainTab == 'commit'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
-      >
-        Commit
-      </button>
-    </div>
-    <div class="main-area">
-      {#if mainTab == "graph"}
-        <div class="graph-area">
-          <div class="overflow-auto-style commit-message-area">
-            {#each commitMessages as commitMessage}
-              <button
-                class="commit-message"
-                on:click={(_) => getFileChanges(commitMessage[0])}
-              >
-                <div>
-                  {commitMessage[3]}
+  <Resizable.PaneGroup direction="horizontal" class="rounded-lg border">
+    <Resizable.Pane defaultSize={20} class="branch-area overflow-auto-style">
+      <Dialog.Root bind:open={newBranchDialog}>
+        <Dialog.Trigger
+          class={buttonVariants({ variant: "outline", size: "lg" })}
+        >
+          New Branch
+        </Dialog.Trigger>
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>New Branch</Dialog.Title>
+            <Dialog.Description>
+              <div class="flex flex-col">
+                <div class="flex w-full max-w-sm flex-col gap-1.5">
+                  <Label for="email">New Branch Name</Label>
+                  <Input bind:value={newBranchName} placeholder="Name" />
                 </div>
-                <div class="commit-message-info">
-                  <div>
-                    {commitMessage[1]}
-                  </div>
-                  <div>
-                    {commitMessage[2]}
-                  </div>
-                  <div>
-                    {commitMessage[0]}
-                  </div>
+                <div class="flex w-full max-w-sm flex-col gap-1.5">
+                  <Label for="email">From Branch</Label>
+                  <Input bind:value={selectedBranch} placeholder="Branch" />
                 </div>
-              </button>
-            {/each}
-          </div>
-          <div class="commit-changes">
-            <Diff diff={changes} />
-          </div>
-        </div>
-      {/if}
-      {#if mainTab == "commit"}
-        <div class="main-commit-area overflow-auto-style">
-          <div class="file-changes overflow-auto-style">
-            <Diff diff={changes} />
-          </div>
-          <div class="change-files">
-            <div class="unstaged-change-files">
-              <h2>Unstaged</h2>
-              {#each unstagedFiles as files}
-                <button
-                  on:click={(_) => getChanges("unstaged", files)}
-                  class="commit-file-path"
+                <div class="flex w-full max-w-sm flex-col gap-1.5">
+                  <Label for="email">Force</Label>
+                  <Checkbox bind:checked={force} />
+                </div>
+                <Button variant="outline" on:click={creatBranch} size="lg"
+                  >Create</Button
                 >
-                  {files}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    on:click={function (e) {
-                      addFile(e, files);
-                    }}
-                  >
-                    <Add color="var(--text-color)" />
+              </div>
+            </Dialog.Description>
+          </Dialog.Header>
+        </Dialog.Content>
+      </Dialog.Root>
+
+      {#each branchList as branch}
+        <ContextMenu.Root>
+          <ContextMenu.Trigger>
+            <button
+              on:dblclick={() => selectBranch(branch)}
+              class="branch-name {selectedBranch == branch
+                ? 'branch-selected'
+                : ''}"
+            >
+              {branch}
+            </button>
+          </ContextMenu.Trigger>
+          <ContextMenu.Content>
+            <Dialog.Root>
+              <Dialog.Trigger
+                class={buttonVariants({ variant: "ghost", size: "lg" })}
+              >
+                Rename
+              </Dialog.Trigger>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>
+                    <ContextMenu.Item>Rename</ContextMenu.Item>
+                  </Dialog.Title>
+                  <Dialog.Description>
+                    <div class="flex flex-col">
+                      <div class="flex w-full max-w-sm flex-col gap-1.5">
+                        <Label for="email">Rename</Label>
+                        <Input
+                          bind:value={newBranchName}
+                          placeholder="Rename"
+                        />
+                      </div>
+                      <div class="flex w-full max-w-sm flex-col gap-1.5">
+                        <Label for="email">Force</Label>
+                        <Checkbox bind:checked={force} />
+                      </div>
+                      <Button
+                        variant="outline"
+                        on:click={(_) => renameBranch(branch)}>Rename</Button
+                      >
+                    </div>
+                  </Dialog.Description>
+                </Dialog.Header>
+              </Dialog.Content>
+            </Dialog.Root>
+
+            <Dialog.Root>
+              <Dialog.Trigger
+                class={buttonVariants({ variant: "ghost", size: "lg" })}
+              >
+                Delete
+              </Dialog.Trigger>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>
+                    <ContextMenu.Item>Delete {branch}?</ContextMenu.Item>
+                  </Dialog.Title>
+                  <Dialog.Description>
+                    <div class="flex flex-col">
+                      <Button
+                        variant="outline"
+                        on:click={(_) => deleteBranch(branch)}>Delete</Button
+                      >
+                    </div>
+                  </Dialog.Description>
+                </Dialog.Header>
+              </Dialog.Content>
+            </Dialog.Root>
+          </ContextMenu.Content>
+        </ContextMenu.Root>
+      {/each}
+    </Resizable.Pane>
+    <Resizable.Handle />
+    <Resizable.Pane defaultSize={80} class="header">
+      <div class="header-buttons">
+        <button
+          class="item"
+          on:click={(_) => tabChange("graph")}
+          style="color:{mainTab == 'graph'
+            ? 'var(--primary-color)'
+            : 'var(--text-color)'}"
+        >
+          Graph
+        </button>
+        <button
+          class="item"
+          on:click={(_) => tabChange("commit")}
+          style="color:{mainTab == 'commit'
+            ? 'var(--primary-color)'
+            : 'var(--text-color)'}"
+        >
+          Commit
+        </button>
+      </div>
+      <div class="main-area">
+        {#if mainTab == "graph"}
+          <div class="graph-area">
+            <div class="overflow-auto-style commit-message-area">
+              {#each commitMessages as commitMessage}
+                <button
+                  class="commit-message"
+                  on:click={(_) => getFileChanges(commitMessage[0])}
+                >
+                  <div>
+                    {commitMessage[3]}
+                  </div>
+                  <div class="commit-message-info">
+                    <div>
+                      {commitMessage[1]}
+                    </div>
+                    <div>
+                      {commitMessage[2]}
+                    </div>
+                    <div>
+                      {commitMessage[0]}
+                    </div>
                   </div>
                 </button>
               {/each}
             </div>
-            <div class="staged-change-files">
-              <h2>Staged</h2>
-              {#each stagedFiles as files}
-                <button
-                  on:click={(_) => getChanges("staged", files)}
-                  class="commit-file-path"
-                >
-                  {files}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    on:click={function (e) {
-                      removeFile(e, files);
-                    }}
-                  >
-                    <Remove color="var(--text-color)" />
-                  </div>
-                </button>
-              {/each}
+            <div class="commit-changes">
+              <Diff diff={changes} />
             </div>
           </div>
-
-          <div style="height: 16%;" class="grid w-full gap-2">
-            <Textarea placeholder="Type your message here." />
-            <Button variant="outline" on:click={makeCommit}>commit</Button>
-          </div>
-        </div>
-      {/if}
-    </div>
-  </div>
+        {/if}
+        {#if mainTab == "commit"}
+          <Resizable.PaneGroup direction="vertical">
+            <Resizable.Pane class="overflow-auto-style">
+              <Diff diff={changes} />
+            </Resizable.Pane>
+            <Resizable.Handle />
+            <Resizable.Pane>
+              <Resizable.PaneGroup direction="horizontal">
+                <Resizable.Pane defaultSize={50}>
+                  <div class="unstaged-change-files">
+                    <h2>Unstaged</h2>
+                    {#each unstagedFiles as files}
+                      <button
+                        on:click={(_) => getChanges("unstaged", files)}
+                        class="commit-file-path"
+                      >
+                        {files}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div
+                          on:click={function (e) {
+                            addFile(e, files);
+                          }}
+                        >
+                          <Add color="var(--text-color)" />
+                        </div>
+                      </button>
+                    {/each}
+                  </div>
+                </Resizable.Pane>
+                <Resizable.Handle />
+                <Resizable.Pane defaultSize={50}>
+                  <div class="staged-change-files">
+                    <h2>Staged</h2>
+                    {#each stagedFiles as files}
+                      <button
+                        on:click={(_) => getChanges("staged", files)}
+                        class="commit-file-path"
+                      >
+                        {files}
+                        <!-- svelte-ignore a11y_click_events_have_key_events -->
+                        <!-- svelte-ignore a11y_no_static_element_interactions -->
+                        <div
+                          on:click={function (e) {
+                            removeFile(e, files);
+                          }}
+                        >
+                          <Remove color="var(--text-color)" />
+                        </div>
+                      </button>
+                    {/each}
+                  </div>
+                </Resizable.Pane>
+              </Resizable.PaneGroup>
+              <div class="change-files"></div>
+            </Resizable.Pane>
+            <Resizable.Handle />
+            <Resizable.Pane  defaultSize={15}>
+              <div class="grid w-full gap-2">
+                <Textarea placeholder="Type your message here." />
+                <Button variant="outline" on:click={makeCommit}>commit</Button>
+              </div>
+            </Resizable.Pane>
+          </Resizable.PaneGroup>
+        {/if}
+      </div>
+    </Resizable.Pane>
+  </Resizable.PaneGroup>
 </main>
 
 <style>
@@ -435,7 +453,6 @@
 
   .branch-area {
     height: calc(100%);
-    resize: horizontal;
     overflow: auto;
     width: 250px;
     border-right: 1px solid black;
@@ -497,12 +514,12 @@
     display: flex;
     flex-direction: column;
     width: calc(100% - 250px);
-    .header-buttons {
-      display: flex;
-      margin-bottom: 20px;
-    }
   }
 
+  .header-buttons {
+    display: flex;
+    margin-bottom: 20px;
+  }
   .item {
     width: 70px;
     display: flex;
@@ -543,17 +560,12 @@
   }
 
   .unstaged-change-files {
-    width: 50%;
-    height: 30vh;
-    overflow: auto;
-  }
-  .staged-change-files {
-    width: 50%;
     height: 30vh;
     overflow: auto;
   }
 
-  .file-changes {
-    height: 49%;
+  .staged-change-files {
+    height: 30vh;
+    overflow: auto;
   }
 </style>
