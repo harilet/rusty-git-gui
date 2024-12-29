@@ -504,7 +504,7 @@
 
   .header-buttons {
     display: flex;
-    margin-bottom: 20px;
+    margin: 10px;
   }
   .item {
     width: 70px;
