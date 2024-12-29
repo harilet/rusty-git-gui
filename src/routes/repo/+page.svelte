@@ -407,7 +407,7 @@
               <div class="change-files"></div>
             </Resizable.Pane>
             <Resizable.Handle />
-            <Resizable.Pane  defaultSize={15}>
+            <Resizable.Pane defaultSize={15}>
               <div class="grid w-full gap-2">
                 <Textarea placeholder="Type your message here." />
                 <Button variant="outline" on:click={makeCommit}>commit</Button>
@@ -449,14 +449,6 @@
     padding: 0px;
     margin: 0px;
     max-width: none;
-  }
-
-  .branch-area {
-    height: calc(100%);
-    overflow: auto;
-    width: 250px;
-    border-right: 1px solid black;
-    display: block;
   }
 
   .branch-name {
@@ -510,12 +502,6 @@
     }
   }
 
-  .header {
-    display: flex;
-    flex-direction: column;
-    width: calc(100% - 250px);
-  }
-
   .header-buttons {
     display: flex;
     margin-bottom: 20px;
@@ -529,11 +515,6 @@
     border: none;
     color: var(--text-color);
     cursor: pointer;
-  }
-
-  .main-commit-area {
-    height: 100%;
-    width: 100%;
   }
 
   .commit-file-path {
