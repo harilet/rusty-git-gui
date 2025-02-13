@@ -14,29 +14,26 @@
       type="text/css"
       href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css"
     />
-
-    <!-- Javascripts -->
-    <script
-      type="text/javascript"
-      src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"
-    ></script>
     <title>Tauri + SvelteKit + Typescript App</title>
     %sveltekit.head%
     <style>
       :root {
-        --primary-color: #007aff;
-        --text-color: #f3f4f6;
+        --primary-color: #FFFFFF;
+        --on-primary-color: #000000;
+        --background-color: #000000;
+        --on-background-color: #FFFFFF;
+        --semi-white: rgb(255 255 255 / 0.1);
       }
 
       .html-area {
-        background: transparent;
+        background: var(--background-color);
         height: 100%;
       }
 
       .body-area {
         margin: 0px;
         height: 100%;
-        color: var(--text-color);
+        color: var(--on-background-color);
       }
 
       .overflow-auto-style {
@@ -46,6 +43,10 @@
       }
 
       .bg-background\/80{
+        background: hsl(0deg 0% 0% / 80%) !important;
+      }
+
+      .bg-popover{
         background: hsl(0deg 0% 0% / 80%) !important;
       }
     </style>

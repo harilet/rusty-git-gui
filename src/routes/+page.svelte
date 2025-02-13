@@ -1,15 +1,17 @@
 <script lang="ts">
-  import Titlebar from "../lib/titlebar.svelte";
-  import Add from "../lib/add.svelte";
-  import Computer from "../lib/computer.svelte";
-  import Download from "../lib/download.svelte";
-  import FolderOpen from "../lib/folder_open.svelte";
+  import Titlebar from "../lib/ui-components/titlebar.svelte";
+  import Add from "../lib/svelte-svg/add.svelte";
+  import Computer from "../lib/svelte-svg/computer.svelte";
+  import Download from "../lib/svelte-svg/download.svelte";
+  import FolderOpen from "../lib/svelte-svg/folder_open.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
-  import { Button } from "$lib/components/ui/button";
-  import Input from "$lib/components/ui/input/input.svelte";
-  import { Label } from "$lib/components/ui/label";
+  import Button from "$lib/ui-components/button.svelte";
+  import Input from "$lib/ui-components/input.svelte";
+  import { onMount } from "svelte";
+  import ContextMenu from "$lib/ui-components/contextMenu.svelte";
+  import DialogBox from "$lib/ui-components/dialogBox.svelte";
 
   $: pageMode = "project";
 
@@ -17,6 +19,10 @@
   $: repoLocation = "";
   $: repoName = "";
   $: inProgress = false;
+
+  onMount(() => {
+
+  });
 
   $: {
     if (repoUrl != "") {
@@ -74,62 +80,63 @@
 <main class="container">
   <div class="header">
     <div class="header-buttons">
-      <button
-        class="item"
-        on:click={(_) => changeType("project")}
-        style="color:{pageMode == 'project'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
+      <Button
+        isSelected={pageMode == "project"}
+        onClick={(_: any) => changeType("project")}
+        buttonType="select"
       >
-        <Computer
-          color={pageMode == "project"
-            ? "var(--primary-color)"
-            : "var(--text-color)"}
-        />
-        Projects
-      </button>
-      <button
-        class="item"
-        on:click={(_) => changeType("clone")}
-        style="color:{pageMode == 'clone'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
+        <div class="item">
+          <Computer
+            color={pageMode == "project"
+              ? "var(--primary-color)"
+              : "var(--on-background-color)"}
+          />
+          Projects
+        </div>
+      </Button>
+
+      <Button
+        onClick={(_: any) => changeType("clone")}
+        isSelected={pageMode == "clone"}
+        buttonType="select"
       >
-        <Download
-          color={pageMode == "clone"
-            ? "var(--primary-color)"
-            : "var(--text-color)"}
-        />
-        Clone
-      </button>
-      <button
-        class="item"
-        on:click={(_) => changeType("open")}
-        style="color:{pageMode == 'open'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
+        <div class="item">
+          <Download
+            color={pageMode == "clone"
+              ? "var(--primary-color)"
+              : "var(--on-background-color)"}
+          />
+          Clone
+        </div>
+      </Button>
+      <Button
+        onClick={(_: any) => changeType("open")}
+        isSelected={pageMode == "open"}
+        buttonType="select"
       >
-        <FolderOpen
-          color={pageMode == "open"
-            ? "var(--primary-color)"
-            : "var(--text-color)"}
-        />
-        Open
-      </button>
-      <button
-        class="item"
-        on:click={(_) => changeType("create")}
-        style="color:{pageMode == 'create'
-          ? 'var(--primary-color)'
-          : 'var(--text-color)'}"
+        <div class="item">
+          <FolderOpen
+            color={pageMode == "open"
+              ? "var(--primary-color)"
+              : "var(--on-background-color)"}
+          />
+          Open
+        </div>
+      </Button>
+      <Button
+        onClick={(_: any) => changeType("create")}
+        isSelected={pageMode == "create"}
+        buttonType="select"
       >
-        <Add
-          color={pageMode == "create"
-            ? "var(--primary-color)"
-            : "var(--text-color)"}
-        />
-        Create
-      </button>
+        <div class="item">
+          <Add
+            color={pageMode == "create"
+              ? "var(--primary-color)"
+              : "var(--on-background-color)"}
+          />
+          Create
+        </div>
+      </Button>
     </div>
     {#if inProgress}
       <div class="loader"></div>
@@ -145,49 +152,37 @@
         <div class="block font-semibold">Clone Project</div>
 
         <div class="flex flex-col space-y-1.5">
-          <Label for="name">URL</Label>
-          <Input
-            bind:value={repoUrl}
-            id="name"
-            placeholder="Remote project URL"
-          />
+          <lable for="name">URL</lable>
+          <Input bind:value={repoUrl} placeholder="Remote project URL" />
         </div>
         <div class="flex flex-col space-y-1.5">
-          <Label for="name">Location</Label>
+          <lable for="name">Location</lable>
           <div class="flex items-center space-x-2 w-full">
             <Input
               bind:value={repoLocation}
               placeholder="Location of the project"
             />
-            <Button on:click={openFileSelector} variant="outline"
+            <Button buttonType="secondary" onClick={openFileSelector}
               >Open Exploer</Button
             >
           </div>
         </div>
         <div class="flex flex-col space-y-1.5">
-          <Label for="name">Name</Label>
-          <Input
-            bind:value={repoName}
-            id="name"
-            placeholder="Name of your project"
-          />
+          <lable for="name">Name</lable>
+          <Input bind:value={repoName} placeholder="Name of your project" />
         </div>
-        <Button variant="outline" on:click={cloneProject}>Clone</Button>
+        <Button onClick={cloneProject}>Clone</Button>
       </div>
     {:else if pageMode == "open"}
       <div class="grid w-full items-center gap-4">
         <div class="block font-semibold">Open Projects</div>
         <div class="flex items-center space-x-2">
           <Input bind:value={repoLocation} placeholder="repo location" />
-          <Button on:click={openFileSelector} variant="outline"
+          <Button buttonType="secondary" onClick={openFileSelector}
             >Open Exploer</Button
           >
         </div>
-        <Button
-          variant="outline"
-          on:click={openRepo}
-          disabled={repoLocation == ""}>Open</Button
-        >
+        <Button onClick={openRepo} disabled={repoLocation == ""}>Open</Button>
       </div>
     {:else if pageMode == "create"}
       <div class="grid w-full items-center gap-4">
@@ -224,7 +219,7 @@
     align-items: center;
     background: transparent;
     border: none;
-    color: var(--text-color);
+    color: var(--on-background-color);
     cursor: pointer;
   }
   /* HTML: <div class="loader"></div> */

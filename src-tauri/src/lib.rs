@@ -40,6 +40,7 @@ fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
 
 #[tauri::command]
 fn open_repo_window(app: AppHandle, repo_location: String) {
+    save_project(repo_location.clone());
     let mut url = "/repo?location=".to_string();
     url.push_str(&repo_location);
     let webview_url = tauri::WebviewUrl::App(url.into());
@@ -357,6 +358,15 @@ fn remove_file_index(repo_location: String, path: String) {
 }
 
 #[tauri::command]
+fn remove_file(repo_location: String, path: String) {
+    let repo = Repository::open(repo_location).unwrap();
+    let mut index = repo.index().unwrap();
+    index.remove_path(Path::new(&path)).unwrap();
+    index.write().unwrap();
+    return;
+}
+
+#[tauri::command]
 fn make_commit(repo_location: String, message: String) {
     let repo = Repository::open(repo_location).unwrap();
     let mut index = repo.index().unwrap();
@@ -423,8 +433,8 @@ pub fn run() {
     let exe_path = get_exe_dir();
     let project_list_path = exe_path.join("config\\project-list.json");
     if !(project_list_path.exists()) {
-        let _ = fs::create_dir(exe_path.join("config"));
-        let _ = File::create(project_list_path);
+        fs::create_dir(exe_path.join("config")).unwrap();
+        File::create(project_list_path).unwrap();
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -447,6 +457,7 @@ pub fn run() {
             new_branch,
             delete_branch,
             rename_branch,
+            remove_file,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
@@ -470,4 +481,12 @@ fn get_exe_dir() -> PathBuf {
 fn get_current_branch_name(repo: &Repository) -> String {
     let head = repo.head().unwrap();
     head.shorthand().unwrap().to_string()
+}
+
+fn save_project(path: String){
+    let exe_path = get_exe_dir();
+    let project_list_path = exe_path.join("config\\project-list.json");
+    let content=[path];
+    
+    fs::write(project_list_path, serde_json::to_string(&content).unwrap()).unwrap();
 }

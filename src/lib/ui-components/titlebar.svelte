@@ -85,7 +85,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    fill: var(--text-color);
+    fill: var(--on-background-color);
   }
 
   .hvrBgDark:hover {
@@ -99,7 +99,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    fill: var(--text-color);
+    fill: var(--on-background-color);
   }
 
   .btn-close:hover {
