@@ -14,7 +14,13 @@ use tauri::{AppHandle, Emitter};
 #[derive(Clone, serde::Serialize)]
 struct BranchesPayload {
     default: String,
-    branches: Vec<[String; 2]>,
+    branches: Branches,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct Branches {
+    local: Vec<String>,
+    remote: Vec<String>,
 }
 
 #[tauri::command]
@@ -31,7 +37,8 @@ fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
             .clone(&repo_url, Path::new(&repo_location));
         match result {
             Ok(_) => {}
-            Err(_) => {
+            Err(e) => {
+                println!("{:#?}",e);
                 app.emit("clone-complete", "failure").unwrap();
             }
         }
@@ -57,23 +64,25 @@ fn open_repo_window(app: AppHandle, repo_location: String) {
 
 #[tauri::command]
 fn get_branches(repo_location: String) -> BranchesPayload {
+    let mut branch_list: Branches=Branches{
+        local:  Vec::new(),
+        remote: Vec::new(),
+    };
     let repo = Repository::open(repo_location).unwrap();
+    
     let deafult_branch = get_current_branch_name(&repo);
 
     let branches = repo.branches(None).unwrap();
-    let mut branch_list = vec![];
     branches.for_each(|branch| {
         for bran in branch.iter() {
             if bran.1 == BranchType::Local {
-                branch_list.push([
+                branch_list.local.push(
                     bran.0.name().unwrap().unwrap().to_string(),
-                    "Local".to_string(),
-                ]);
+                );
             } else if bran.1 == BranchType::Remote {
-                branch_list.push([
+                branch_list.remote.push(
                     bran.0.name().unwrap().unwrap().to_string(),
-                    "Remote".to_string(),
-                ]);
+                );
             }
         }
     });
@@ -84,27 +93,40 @@ fn get_branches(repo_location: String) -> BranchesPayload {
 }
 
 #[tauri::command]
+fn fetch_all(repo_location: String){
+    let repo = Repository::open(repo_location).unwrap();
+    let mut origin=repo.find_remote("origin").unwrap();
+    origin.fetch(&["refs/heads/*:refs/remotes/origin/*"], None, None).unwrap();
+}
+
+#[tauri::command]
 fn get_commit(repo_location: String, branch_name: String) -> Vec<[std::string::String; 5]> {
     let repo = Repository::open(repo_location).unwrap();
-    let branch = repo.find_branch(&branch_name, BranchType::Local).unwrap();
+    let branch_name_split:Vec<_>=branch_name.split('/').collect();
+    if branch_name_split[0]=="origin" {
+        [].to_vec()
+    } else{
+            let branch = repo.find_branch(&branch_name, BranchType::Local).unwrap();
 
-    let mut walk = repo.revwalk().unwrap();
-    walk.push(branch.get().peel(ObjectType::Commit).unwrap().id())
-        .unwrap();
-    walk.set_sorting(git2::Sort::TIME).unwrap();
-
-    let mut commit_list = vec![];
-    for rev in walk.take(30) {
-        let commit = repo.find_commit(rev.unwrap()).unwrap();
-        commit_list.push([
-            commit.id().to_string(),
-            commit.committer().name().unwrap().to_string(),
-            commit.committer().email().unwrap().to_string(),
-            commit.message().unwrap().to_string(),
-            commit.summary().unwrap().to_string(),
-        ]);
-    }
-    commit_list
+            let mut walk = repo.revwalk().unwrap();
+            walk.push(branch.get().peel(ObjectType::Commit).unwrap().id())
+                .unwrap();
+            walk.set_sorting(git2::Sort::TIME).unwrap();
+        
+            let mut commit_list = vec![];
+            for rev in walk.take(30) {
+                let commit = repo.find_commit(rev.unwrap()).unwrap();
+                commit_list.push([
+                    commit.id().to_string(),
+                    commit.committer().name().unwrap().to_string(),
+                    commit.committer().email().unwrap().to_string(),
+                    commit.message().unwrap().to_string(),
+                    commit.summary().unwrap().to_string(),
+                ]);
+            }
+            commit_list
+        }
+    
 }
 
 #[tauri::command]
@@ -170,14 +192,38 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
 #[tauri::command]
 fn checkout_branch(repo_location: String, branch_name: String) {
     let repo = Repository::open(repo_location).unwrap();
-    let (obje, refr) = repo.revparse_ext(&branch_name).unwrap();
-    repo.checkout_tree(&obje, None).unwrap();
-    match refr {
-        Some(gref) => {
-            repo.set_head(gref.name().unwrap()).unwrap();
+    let branch_name_split:Vec<_>=branch_name.split('/').collect();
+    if branch_name_split[0]=="origin" {
+        checkout_remote_branch(&repo,"origin",&branch_name_split[1]).unwrap();
+    }else{
+        let (obje, refr) = repo.revparse_ext(&branch_name).unwrap();
+        
+        repo.checkout_tree(&obje, None).unwrap();
+        match refr {
+            Some(gref) => {
+                repo.set_head(gref.name().unwrap()).unwrap();
+            }
+            None => {}
         }
-        None => {}
     }
+
+}
+
+fn checkout_remote_branch(repo: &Repository, remote: &str, branch: &str) -> Result<(), git2::Error> {
+    // Build the remote branch reference name, e.g., "refs/remotes/origin/mybranch"
+    let remote_ref = format!("refs/remotes/{}/{}", remote, branch);
+    // Find the remote branch reference
+    let reference = repo.find_reference(&remote_ref)?;
+    // Get the commit that the remote branch points to
+    let commit = repo.find_commit(reference.target().expect("No target found"))?;
+    // Create a new local branch named `branch` pointing at that commit.
+    // The `false` means do not force creation if it already exists.
+    repo.branch(branch, &commit, false)?;
+    // Set HEAD to the new local branch and update the working directory.
+    let local_ref = format!("refs/heads/{}", branch);
+    repo.set_head(&local_ref)?;
+    repo.checkout_head(None)?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -458,6 +504,8 @@ pub fn run() {
             delete_branch,
             rename_branch,
             remove_file,
+            get_projects_list,
+            fetch_all,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
@@ -484,9 +532,21 @@ fn get_current_branch_name(repo: &Repository) -> String {
 }
 
 fn save_project(path: String){
+    let exe_path: PathBuf = get_exe_dir();
+    let project_list_path = exe_path.join("config\\project-list.json");
+
+    let file_data = fs::read(project_list_path.clone()).unwrap(); 
+    let mut data:Vec<String> = serde_json::from_slice(&file_data[..]).unwrap(); 
+    data=data.into_iter().filter(|x| x.as_str() != path.as_str()).collect();
+    data.push(path);
+    fs::write(project_list_path, serde_json::to_string(&data).unwrap()).unwrap();
+}
+
+#[tauri::command]
+fn get_projects_list() -> Vec<String> {
     let exe_path = get_exe_dir();
     let project_list_path = exe_path.join("config\\project-list.json");
-    let content=[path];
-    
-    fs::write(project_list_path, serde_json::to_string(&content).unwrap()).unwrap();
+    let file_data = fs::read(project_list_path).unwrap(); 
+    let data:Vec<String> = serde_json::from_slice(&file_data[..]).unwrap(); 
+    data
 }

@@ -20,8 +20,12 @@
   $: repoName = "";
   $: inProgress = false;
 
-  onMount(() => {
+  $: recentProjects = [];
 
+  onMount(() => {
+    invoke("get_projects_list").then(function (data: any) {
+      recentProjects = data.reverse();
+    });
   });
 
   $: {
@@ -146,6 +150,17 @@
     {#if pageMode == "project"}
       <div class="grid w-full items-center gap-4">
         <div class="block font-semibold">Recent Projects</div>
+        {#each recentProjects as project}
+          <Button
+            onClick={(_: any) => {
+              repoLocation = project;
+              openRepo();
+            }}
+            buttonType="secondary"
+          >
+            {project}
+          </Button>
+        {/each}
       </div>
     {:else if pageMode == "clone"}
       <div class="grid w-full items-center gap-4">
