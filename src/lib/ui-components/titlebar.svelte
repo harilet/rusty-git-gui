@@ -1,6 +1,8 @@
 <script>
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
+  export let title="";
+
   const appWindow = getCurrentWindow();
 
   function onClickReduce() {
@@ -17,6 +19,11 @@
 </script>
 
 <div data-tauri-drag-region class="title-bar">
+  <div class="px-2">
+    {title}
+  </div>
+  
+  <div class="flex">
   <button aria-label="minimize" class="hvrBgDark" on:click={onClickReduce}>
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -70,11 +77,12 @@
     </svg>
   </button>
 </div>
+</div>
 
 <style>
   .title-bar {
     display: flex;
-    justify-content: end;
+    justify-content: space-between;
     height: 100%;
   }
 
