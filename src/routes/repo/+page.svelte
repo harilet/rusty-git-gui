@@ -682,9 +682,6 @@
     }
   }
 
-  .header-buttons {
-    display: flex;
-  }
   .item {
     width: 70px;
     display: flex;

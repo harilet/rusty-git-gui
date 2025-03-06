@@ -1,4 +1,5 @@
 use core::str;
+use auth_git2::GitAuthenticator;
 use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{BranchType, DiffFormat, DiffOptions, ObjectType, Repository};
 use std::path::Path;
@@ -525,7 +526,25 @@ fn push_to_remote(repo_location: String, branch_name:String,remote:String){
     let branch_ref_name = branch_ref.name().unwrap();
     repo.set_head(branch_ref_name).unwrap();
 
-    origin.push(&[branch_ref_name], None).unwrap();
+    let mut remote_callbacks = git2::RemoteCallbacks::new();
+    remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+        println!("{:#?}:{:#?}:{:#?}",_url,_username_from_url,_allowed_types);
+        git2::Cred::ssh_key_from_agent("git") // Use SSH agent for authentication
+    });
+
+    // match origin.connect_auth(git2::Direction::Push,Some(remote_callbacks),None) {
+    //     Ok(_) => {println!("connect_auth-pushed to remote")},
+    //     Err(e) => {println!("connect_auth-failed to push to remote: {}",e)},
+    // };
+
+    let mut push_options=git2::PushOptions::new();
+    let mut_push_options=push_options.remote_callbacks(remote_callbacks);
+
+    match origin.push(&[branch_ref_name],Some(mut_push_options)) {
+        Ok(_) => {println!("push-pushed to remote")},
+        Err(e) => {println!("push-failed to push to remote: {}",e)},
+    };
+
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
