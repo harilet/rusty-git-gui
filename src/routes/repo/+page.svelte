@@ -11,6 +11,7 @@
   import Button from "$lib/ui-components/button.svelte";
   import DialogBox from "$lib/ui-components/dialogBox.svelte";
   import Input from "$lib/ui-components/input.svelte";
+    import Push from "./push.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -29,8 +30,8 @@
   $: userName = "";
   $: userEmail = "";
   $: remotesList = [];
-  $: newRemoteName='';
-  $: newRemoteURL='';
+  $: newRemoteName = "";
+  $: newRemoteURL = "";
 
   let newBranchDialog: HTMLDialogElement;
   let renameBranchDialog: HTMLDialogElement;
@@ -286,6 +287,12 @@
       repoLocation: location,
       remoteName: newRemoteName,
       remoteUrl: newRemoteURL,
+    }).then((_) => {
+      invoke("get_remotes", {
+        repoLocation: location,
+      }).then((res: any) => {
+        remotesList = res;
+      });
     });
   }
 </script>
@@ -438,8 +445,10 @@
               </div>
             </div>
           {/each}
-          <Button buttonType="secondary" onClick={showNewRemoteDialog}>Add Remote</Button>
-          <DialogBox bind:dialog={newRemoteDialog}> 
+          <Button buttonType="secondary" onClick={showNewRemoteDialog}
+            >Add Remote</Button
+          >
+          <DialogBox bind:dialog={newRemoteDialog}>
             <div class="flex flex-col m-8">
               <label for="remoteName">Remote name:</label>
               <Input bind:value={newRemoteName} />
@@ -452,7 +461,10 @@
       </DialogBox>
     </div>
     <div class="w-5/6">
-      <div class="header-buttons h-1/10">
+      <div class="flex flex-row h-1/10">
+        <Push location={location??''} branchList={localBranchList} remoteList={remotesList} selectedBranch={selectedBranch} />
+      </div>
+      <div class="flex h-1/10">
         <button
           class="item"
           on:click={(_) => tabChange("graph")}
@@ -472,7 +484,7 @@
           Commit
         </button>
       </div>
-      <div class="main-area h-9/10">
+      <div class="main-area h-8/10">
         {#if mainTab == "graph"}
           <div class="graph-area">
             <div class="overflow-auto-style commit-message-area">

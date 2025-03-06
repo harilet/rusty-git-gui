@@ -514,6 +514,20 @@ fn add_remote(repo_location: String, remote_name: String, remote_url: String) {
     let  _remote=repo.remote(&remote_name, &remote_url).unwrap();
 }
 
+#[tauri::command]
+fn push_to_remote(repo_location: String, branch_name:String,remote:String){
+    let repo = Repository::open(repo_location).unwrap();
+    let mut origin = repo.find_remote(&remote).unwrap();
+
+    let branch=repo.find_branch(&branch_name, BranchType::Local).unwrap();
+
+    let branch_ref = branch.into_reference();
+    let branch_ref_name = branch_ref.name().unwrap();
+    repo.set_head(branch_ref_name).unwrap();
+
+    origin.push(&[branch_ref_name], None).unwrap();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let exe_path = get_exe_dir();
@@ -549,6 +563,7 @@ pub fn run() {
             get_config,
             get_remotes,
             add_remote,
+            push_to_remote,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
