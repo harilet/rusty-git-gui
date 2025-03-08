@@ -35,21 +35,19 @@
 </script>
 
 <DialogBox bind:dialog={pushDialog}>
-    <div class="flex flex-col m-8">
+    <div class="flex flex-col m-8 w-40">
         <label for="remoteName">Branch</label>
-        <select bind:value={pushBranchName}>
+        <select class="mb-4" bind:value={pushBranchName}>
             {#each branchList as branch}
               <option value={branch} selected>{branch}</option>
             {/each}
           </select>
-        <Input bind:value={pushBranchName} />
         <label for="remoteUrl">Remote</label>
-        <select bind:value={remoteName}>
+        <select class="mb-4" bind:value={remoteName}>
             {#each remoteList as remote}
               <option value={remote['name']} selected>{remote['name']}</option>
             {/each}
           </select>
-        <Input bind:value={remoteName} />
         <Button buttonType="secondary" onClick={pushBranch}>Push</Button>
     </div>
 </DialogBox>
