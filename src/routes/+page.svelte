@@ -75,6 +75,13 @@
     console.log(repoLocation);
     invoke("open_repo_window", { repoLocation: repoLocation });
   }
+
+  function creatRepo() {
+    console.log(repoLocation);
+    invoke("create_repo_window", { repoLocation: repoLocation }).then(()=>{
+      invoke("open_repo_window", { repoLocation: repoLocation });
+    });
+  }
 </script>
 
 <div data-tauri-drag-region class="app-bar">
@@ -173,10 +180,12 @@
         <div class="flex flex-col space-y-1.5">
           <lable for="name">Location</lable>
           <div class="flex items-center space-x-2 w-full">
+            <div style="width: calc(100% - 125px);">
             <Input
               bind:value={repoLocation}
               placeholder="Location of the project"
             />
+          </div>
             <Button buttonType="secondary" onClick={openFileSelector}
               >Open Exploer</Button
             >
@@ -191,8 +200,11 @@
     {:else if pageMode == "open"}
       <div class="grid w-full items-center gap-4">
         <div class="block font-semibold">Open Projects</div>
-        <div class="flex items-center space-x-2">
-          <Input bind:value={repoLocation} placeholder="repo location" />
+        <div class="flex items-center justify-between">
+          <div style="width: calc(100% - 125px);">
+            <Input bind:value={repoLocation} placeholder="repo location" />
+          </div>
+
           <Button buttonType="secondary" onClick={openFileSelector}
             >Open Exploer</Button
           >
@@ -202,6 +214,20 @@
     {:else if pageMode == "create"}
       <div class="grid w-full items-center gap-4">
         <div class="block font-semibold">Create New Repo</div>
+        <div class="flex items-center justify-between">
+          <div style="width: calc(100% - 125px);">
+            <Input bind:value={repoLocation} placeholder="repo location" />
+          </div>
+
+          <Button buttonType="secondary" onClick={openFileSelector}
+            >Open Exploer</Button
+          >
+          
+        </div>
+        <div>
+          <Input bind:value={repoName} placeholder="Name" />
+        </div>
+        <Button onClick={creatRepo} disabled={repoLocation == ""}>Create</Button>
       </div>
     {/if}
   </div>

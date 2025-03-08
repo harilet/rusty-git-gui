@@ -20,6 +20,7 @@
         border-radius: 3px;
         padding: 3px;
         border: solid 1px var(--semi-white);
+        width: -webkit-fill-available;
     }
 
     textarea{

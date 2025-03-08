@@ -1,5 +1,5 @@
+// use auth_git2::GitAuthenticator;
 use core::str;
-use auth_git2::GitAuthenticator;
 use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{BranchType, DiffFormat, DiffOptions, ObjectType, Repository};
 use std::path::Path;
@@ -482,28 +482,27 @@ fn rename_branch(repo_location: String, branch_name: String, new_branch_name: St
 fn get_config(repo_location: String, key_name: String) -> String {
     let repo = Repository::open(repo_location).unwrap();
     match repo.config().unwrap().get_string(&key_name) {
-    Ok(data) => return data,
-    Err(_) => return "".to_string(),
+        Ok(data) => return data,
+        Err(_) => return "".to_string(),
     }
 }
 
 #[tauri::command]
-fn get_remotes(repo_location: String) -> Vec<RemoteDetails>{
+fn get_remotes(repo_location: String) -> Vec<RemoteDetails> {
     let repo = Repository::open(repo_location).unwrap();
 
-    let mut remotes_details: Vec<RemoteDetails>=vec![];
-    
+    let mut remotes_details: Vec<RemoteDetails> = vec![];
+
     repo.remotes().unwrap().iter().for_each(|remote_name| {
         let name = remote_name.unwrap();
         if let Some(remote) = repo.find_remote(name).ok() {
             let remote_name = remote.name().unwrap();
             let remote_url = remote.url().unwrap();
-            remotes_details.push(RemoteDetails{
+            remotes_details.push(RemoteDetails {
                 name: remote_name.to_string(),
-                url: remote_url.to_string()
+                url: remote_url.to_string(),
             });
         }
-        
     });
 
     remotes_details
@@ -512,38 +511,73 @@ fn get_remotes(repo_location: String) -> Vec<RemoteDetails>{
 #[tauri::command]
 fn add_remote(repo_location: String, remote_name: String, remote_url: String) {
     let repo = Repository::open(repo_location).unwrap();
-    let  _remote=repo.remote(&remote_name, &remote_url).unwrap();
+    let _remote = repo.remote(&remote_name, &remote_url).unwrap();
 }
 
 #[tauri::command]
-fn push_to_remote(repo_location: String, branch_name:String,remote:String){
+fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
     let repo = Repository::open(repo_location).unwrap();
     let mut origin = repo.find_remote(&remote).unwrap();
 
-    let branch=repo.find_branch(&branch_name, BranchType::Local).unwrap();
+    let branch = repo.find_branch(&branch_name, BranchType::Local).unwrap();
 
     let branch_ref = branch.into_reference();
     let branch_ref_name = branch_ref.name().unwrap();
     repo.set_head(branch_ref_name).unwrap();
 
+    // let auth=GitAuthenticator::default().add_ssh_key_from_file(std::path::Path::new("C:/Users/Asus/.ssh/github/id_rsa"), None);
+
     let mut remote_callbacks = git2::RemoteCallbacks::new();
     remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-        println!("{:#?}:{:#?}:{:#?}",_url,_username_from_url,_allowed_types);
-        git2::Cred::ssh_key_from_agent("git") // Use SSH agent for authentication
+        println!(
+            "{:#?}:{:#?}:{:#?}",
+            _url, _username_from_url, _allowed_types
+        );
+        println!(
+            "{:#?}",
+            format!("{}/.ssh/github/id_rsa", env::var("HOME").unwrap())
+        );
+        git2::Cred::ssh_key(
+            _username_from_url.unwrap(),
+            None,
+            std::path::Path::new("C:/Users/Asus/.ssh/github/id_rsa"),
+            None,
+        )
     });
 
-    // match origin.connect_auth(git2::Direction::Push,Some(remote_callbacks),None) {
-    //     Ok(_) => {println!("connect_auth-pushed to remote")},
-    //     Err(e) => {println!("connect_auth-failed to push to remote: {}",e)},
+    remote_callbacks.certificate_check(|_str1,str2|{
+        println!("certificate check");
+        println!("{:#?}",str2);
+        Ok(git2::CertificateCheckStatus::CertificateOk)
+    });
+
+    // match auth.push(&repo, &mut origin,&[&branch_ref_name]) {
+    //     Ok(_) => {println!("pushed to remote")},
+    //     Err(e) => {println!("failed: {}",e)},
     // };
 
-    let mut push_options=git2::PushOptions::new();
-    let mut_push_options=push_options.remote_callbacks(remote_callbacks);
-
-    match origin.push(&[branch_ref_name],Some(mut_push_options)) {
-        Ok(_) => {println!("push-pushed to remote")},
-        Err(e) => {println!("push-failed to push to remote: {}",e)},
+    match origin.connect_auth(git2::Direction::Push, Some(remote_callbacks), None) {
+        Ok(_) => {
+            println!("connect_auth-pushed to remote")
+        }
+        Err(e) => {
+            println!("{}", e)
+        }
     };
+
+    // let mut push_options=git2::PushOptions::new();
+    // let mut_push_options=push_options.remote_callbacks(remote_callbacks);
+
+    // match origin.push(&[branch_ref_name],Some(mut_push_options)) {
+    //     Ok(_) => {println!("push-pushed to remote")},
+    //     Err(e) => {println!("push-failed to push to remote: {}",e)},
+    // };
+}
+
+#[tauri::command]
+fn create_repo_window(repo_location: String){
+    Repository::init(std::path::PathBuf::from(repo_location)).unwrap();
+    return;
 
 }
 
@@ -583,6 +617,7 @@ pub fn run() {
             get_remotes,
             add_remote,
             push_to_remote,
+            create_repo_window,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
