@@ -11,7 +11,8 @@
   import Button from "$lib/ui-components/button.svelte";
   import DialogBox from "$lib/ui-components/dialogBox.svelte";
   import Input from "$lib/ui-components/input.svelte";
-    import Push from "./push.svelte";
+  import Push from "./push.svelte";
+  import BranchItem from "./branchItem.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -34,8 +35,6 @@
   $: newRemoteURL = "";
 
   let newBranchDialog: HTMLDialogElement;
-  let renameBranchDialog: HTMLDialogElement;
-  let deleteBranchDialog: HTMLDialogElement;
   let profileDialog: HTMLDialogElement;
   let newRemoteDialog: HTMLDialogElement;
 
@@ -91,9 +90,7 @@
       repoLocation: location,
       branchName: branchName,
     });
-    localBranchList = [];
-    remoteBranchList = [];
-    getAllBranchs();
+    refetchBranchs();
   }
 
   function selectBranch(branchName: string) {
@@ -200,46 +197,9 @@
       newBranchName: newBranchName,
       fromBranchName: newBranchFrom,
     }).then(function () {
-      localBranchList = [];
-      remoteBranchList = [];
-      getAllBranchs();
+      refetchBranchs();
       newBranchDialog.close();
     });
-  }
-
-  function renameBranch(branch: string) {
-    invoke("rename_branch", {
-      repoLocation: location,
-      branchName: branch,
-      newBranchName: newBranchName,
-      force: force,
-    }).then(function () {
-      localBranchList = [];
-      remoteBranchList = [];
-      getAllBranchs();
-    });
-  }
-
-  function deleteBranch(branch: string) {
-    invoke("delete_branch", {
-      repoLocation: location,
-      branchName: branch,
-    }).then(function () {
-      localBranchList = [];
-      remoteBranchList = [];
-      getAllBranchs();
-    });
-  }
-
-  function branchContextMenuHandler(e: any, i: any) {
-    switch (i) {
-      case "rename":
-        renameBranchDialog.showModal();
-        break;
-      case "delete":
-        deleteBranchDialog.showModal();
-        break;
-    }
   }
 
   function unstagedContextMenuHandler(i: any, files: any) {
@@ -295,6 +255,12 @@
       });
     });
   }
+
+  function refetchBranchs() {
+    localBranchList = [];
+    remoteBranchList = [];
+    getAllBranchs();
+  }
 </script>
 
 <div data-tauri-drag-region class="app-bar">
@@ -326,7 +292,7 @@
 <main class="container overflow-auto-style">
   <div class="flex w-full">
     <div
-      class="branch-area overflow-auto-style flex flex-col px-2 w-64 justify-between"
+      class="branch-area overflow-auto-style flex flex-col px-2 w-64"
     >
       <div style="margin: 0px 5px; --width: 100%;">
         <Button
@@ -340,98 +306,35 @@
       <div class="overflow-auto-style">
         <div>Local Branch</div>
         {#each localBranchList as branch}
-          <ContextMenu
-            items={["rename", "delete"]}
-            onClick={branchContextMenuHandler}
-          >
-            <button
-              on:dblclick={() => selectBranch(branch)}
-              class="branch-name {selectedBranch == branch
-                ? 'branch-selected'
-                : ''}"
-            >
-              {branch}
-            </button>
-          </ContextMenu>
-
-          <DialogBox bind:dialog={renameBranchDialog}>
-            <div class="flex flex-col m-8">
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <label for="email">Rename</label>
-                <Input bind:value={newBranchName} placeholder="Rename" />
-              </div>
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <label for="email">Force</label>
-                <Input type="checkbox" bind:checked={force} />
-              </div>
-              <Button
-                buttonType="secondary"
-                onClick={(_: any) => renameBranch(branch)}>Rename</Button
-              >
-            </div>
-          </DialogBox>
-
-          <DialogBox bind:dialog={deleteBranchDialog}>
-            <div class="flex flex-col m-8">
-              <Button
-                buttonType="secondary"
-                onClick={(_: any) => deleteBranch(branch)}
-                >Delete {branch}</Button
-              >
-            </div>
-          </DialogBox>
+          <BranchItem
+            {branch}
+            bind:location
+            bind:selectedBranch
+            {selectBranch}
+            callBack={refetchBranchs}
+          />
         {/each}
 
         <div>Remote Branch</div>
         {#each remoteBranchList as branch}
-          <ContextMenu
-            items={["rename", "delete"]}
-            onClick={branchContextMenuHandler}
-          >
-            <button
-              on:dblclick={() => checkoutBranch(branch)}
-              class="branch-name {selectedBranch == branch
-                ? 'branch-selected'
-                : ''}"
-            >
-              {branch}
-            </button>
-          </ContextMenu>
-
-          <DialogBox bind:dialog={renameBranchDialog}>
-            <div class="flex flex-col m-8">
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <label for="email">Rename</label>
-                <Input bind:value={newBranchName} placeholder="Rename" />
-              </div>
-              <div class="flex w-full max-w-sm flex-col gap-1.5">
-                <label for="email">Force</label>
-                <Input type="checkbox" bind:checked={force} />
-              </div>
-              <Button
-                buttonType="secondary"
-                onClick={(_: any) => renameBranch(branch)}>Rename</Button
-              >
-            </div>
-          </DialogBox>
-
-          <DialogBox bind:dialog={deleteBranchDialog}>
-            <div class="flex flex-col m-8">
-              <Button
-                buttonType="secondary"
-                onClick={(_: any) => deleteBranch(branch)}
-                >Delete {branch}</Button
-              >
-            </div>
-          </DialogBox>
+          <BranchItem
+            {branch}
+            bind:location
+            bind:selectedBranch
+            selectBranch={checkoutBranch}
+            callBack={refetchBranchs}
+          />
         {/each}
       </div>
-      <Button buttonType="secondary" onClick={showOptionsDialog}>
-        <div>
-          <div>{userName}</div>
-          <div>{userEmail}</div>
-        </div>
-      </Button>
+      <div class="mt-auto">
+        <Button buttonType="secondary" onClick={showOptionsDialog}>
+          <div>
+            <div>{userName}</div>
+            <div>{userEmail}</div>
+          </div>
+        </Button>
+      </div>
+      
       <DialogBox bind:dialog={profileDialog}>
         <div class="flex flex-col m-8">
           {#each remotesList as remote}
@@ -462,7 +365,12 @@
     </div>
     <div class="w-5/6">
       <div class="flex flex-row h-1/10">
-        <Push location={location??''} branchList={localBranchList} remoteList={remotesList} selectedBranch={selectedBranch} />
+        <Push
+          location={location ?? ""}
+          branchList={localBranchList}
+          remoteList={remotesList}
+          {selectedBranch}
+        />
       </div>
       <div class="flex h-1/10">
         <button
@@ -629,30 +537,6 @@
     padding: 0px;
     margin: 0px;
     max-width: none;
-  }
-
-  .branch-name {
-    padding: 10px 5px;
-    margin: 0px 5px;
-    border-radius: 5px;
-    cursor: pointer;
-    border: none;
-    width: -webkit-fill-available;
-    background: none;
-    color: var(----on-background-colorackground-colorolor);
-    text-align: start;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-  }
-
-  .branch-name:hover {
-    background: #ffffff40;
-  }
-
-  .branch-selected {
-    background: #ffffff40;
   }
 
   .main-area {
