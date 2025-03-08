@@ -13,6 +13,7 @@
   import Input from "$lib/ui-components/input.svelte";
   import Push from "./push.svelte";
   import BranchItem from "./branchItem.svelte";
+    import TabSelect from "$lib/ui-components/tabSelect.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -337,17 +338,22 @@
       
       <DialogBox bind:dialog={profileDialog}>
         <div class="flex flex-col m-8">
+          <table class="border-collapse border">
+            <thead>
+              <tr>
+                <th class="border">Name</th>
+                <th class="border">Path</th>
+              </tr>
+            </thead>
+            <tbody>
           {#each remotesList as remote}
-            <div class="flex flex-row">
-              <div>
-                {remote["name"]}
-              </div>
-              :
-              <div>
-                {remote["url"]}
-              </div>
-            </div>
+              <tr>
+                <td class="border p-4">{remote["name"]}</td>
+                <td class="border p-4">{remote["url"]}</td>
+              </tr>
           {/each}
+        </tbody>
+      </table>
           <Button buttonType="secondary" onClick={showNewRemoteDialog}
             >Add Remote</Button
           >
@@ -373,24 +379,7 @@
         />
       </div>
       <div class="flex h-1/10">
-        <button
-          class="item"
-          on:click={(_) => tabChange("graph")}
-          style="color:{mainTab == 'graph'
-            ? 'var(--primary-color)'
-            : 'var(----on-background-colorolor)'}"
-        >
-          Graph
-        </button>
-        <button
-          class="item"
-          on:click={(_) => tabChange("commit")}
-          style="color:{mainTab == 'commit'
-            ? 'var(--primary-color)'
-            : 'var(----on-background-colorackground-colorolor)'}"
-        >
-          Commit
-        </button>
+        <TabSelect items="{["graph","commit"]}" onSelected={tabChange} selected={mainTab} />
       </div>
       <div class="main-area h-8/10">
         {#if mainTab == "graph"}
@@ -541,7 +530,7 @@
 
   .main-area {
     width: -webkit-fill-available;
-    height: calc(100% - 40px);
+    height: calc(100% - 60px);
   }
 
   .commit-message {
@@ -564,17 +553,6 @@
     div {
       margin: 5px;
     }
-  }
-
-  .item {
-    width: 70px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: transparent;
-    border: none;
-    color: var(----on-background-colorackground-colorolor);
-    cursor: pointer;
   }
 
   .commit-file-path {
