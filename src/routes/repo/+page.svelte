@@ -13,7 +13,8 @@
   import Input from "$lib/ui-components/input.svelte";
   import Push from "./push.svelte";
   import BranchItem from "./branchItem.svelte";
-    import TabSelect from "$lib/ui-components/tabSelect.svelte";
+  import TabSelect from "$lib/ui-components/tabSelect.svelte";
+  import CollapsibleSection from "$lib/ui-components/collapsibleSection.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -292,9 +293,7 @@
 
 <main class="container overflow-auto-style">
   <div class="flex w-full">
-    <div
-      class="branch-area overflow-auto-style flex flex-col px-2 w-64"
-    >
+    <div class="branch-area overflow-auto-style flex flex-col px-2 w-64">
       <div style="margin: 0px 5px; --width: 100%;">
         <Button
           onClick={(_: any) => {
@@ -304,29 +303,31 @@
           New Branch
         </Button>
       </div>
-      <div class="overflow-auto-style">
-        <div>Local Branch</div>
-        {#each localBranchList as branch}
-          <BranchItem
-            {branch}
-            bind:location
-            bind:selectedBranch
-            {selectBranch}
-            callBack={refetchBranchs}
-          />
-        {/each}
+      <div class="overflow-auto-style flex flex-col">
+        <CollapsibleSection title="Local Branch" defaultCollapsed={false}>
+          {#each localBranchList as branch}
+            <BranchItem
+              {branch}
+              bind:location
+              bind:selectedBranch
+              {selectBranch}
+              callBack={refetchBranchs}
+            />
+          {/each}
+        </CollapsibleSection>
 
-        <div>Remote Branch</div>
-        {#each remoteBranchList as branch}
-          <BranchItem
-            type="remote"
-            {branch}
-            bind:location
-            bind:selectedBranch
-            selectBranch={checkoutBranch}
-            callBack={refetchBranchs}
-          />
-        {/each}
+        <CollapsibleSection title="Remote Branch">
+          {#each remoteBranchList as branch}
+            <BranchItem
+              type="remote"
+              {branch}
+              bind:location
+              bind:selectedBranch
+              selectBranch={checkoutBranch}
+              callBack={refetchBranchs}
+            />
+          {/each}
+        </CollapsibleSection>
       </div>
       <div class="mt-auto">
         <Button buttonType="secondary" onClick={showOptionsDialog}>
@@ -336,7 +337,7 @@
           </div>
         </Button>
       </div>
-      
+
       <DialogBox bind:dialog={profileDialog}>
         <div class="flex flex-col m-8">
           <table class="border-collapse border">
@@ -347,14 +348,14 @@
               </tr>
             </thead>
             <tbody>
-          {#each remotesList as remote}
-              <tr>
-                <td class="border p-4">{remote["name"]}</td>
-                <td class="border p-4">{remote["url"]}</td>
-              </tr>
-          {/each}
-        </tbody>
-      </table>
+              {#each remotesList as remote}
+                <tr>
+                  <td class="border p-4">{remote["name"]}</td>
+                  <td class="border p-4">{remote["url"]}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
           <Button buttonType="secondary" onClick={showNewRemoteDialog}
             >Add Remote</Button
           >
@@ -380,7 +381,11 @@
         />
       </div>
       <div class="flex h-1/10">
-        <TabSelect items="{["graph","commit"]}" onSelected={tabChange} selected={mainTab} />
+        <TabSelect
+          items={["graph", "commit"]}
+          onSelected={tabChange}
+          selected={mainTab}
+        />
       </div>
       <div class="main-area h-8/10">
         {#if mainTab == "graph"}
@@ -395,13 +400,10 @@
                     {commitMessage[3]}
                   </div>
                   <div class="commit-message-info">
-                    <div>
+                    <div class="whitespace-nowrap">
                       {commitMessage[1]}
                     </div>
-                    <div>
-                      {commitMessage[2]}
-                    </div>
-                    <div>
+                    <div class="overflow-hidden text-ellipsis">
                       {commitMessage[0]}
                     </div>
                   </div>

@@ -85,14 +85,14 @@
 </script>
  
 <div class="main-file-change-area">
-  <div class="old-change">
+  <div class="old-change overflow-auto-style">
     {#each oldChanges as line}
       <div class="lines">
         {line}
       </div>
     {/each}
   </div>
-  <div class="new-change">
+  <div class="new-change overflow-auto-style">
     {#each newChanges as line}
       <div class="lines">
         {line}
