@@ -319,6 +319,7 @@
         <div>Remote Branch</div>
         {#each remoteBranchList as branch}
           <BranchItem
+            type="remote"
             {branch}
             bind:location
             bind:selectedBranch

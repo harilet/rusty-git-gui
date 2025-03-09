@@ -4,6 +4,7 @@
   export let selectedBranch;
   export let callBack: () => void;
   export let selectBranch: (branch: string) => void;
+  export let type = "local";
 
   import ContextMenu from "$lib/ui-components/contextMenu.svelte";
   import DialogBox from "$lib/ui-components/dialogBox.svelte";
@@ -49,7 +50,11 @@
   }
 </script>
 
-<ContextMenu items={["rename", "delete"]} onClick={branchContextMenuHandler}>
+<ContextMenu
+  disable={type != "local"}
+  items={["rename", "delete"]}
+  onClick={branchContextMenuHandler}
+>
   <button
     on:dblclick={() => selectBranch(branch)}
     class="branch-name {selectedBranch == branch ? 'branch-selected' : ''}"

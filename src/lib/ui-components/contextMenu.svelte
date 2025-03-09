@@ -2,7 +2,8 @@
     import Button from "$lib/ui-components/button.svelte";
 
     export let items: any[] = [];
-    export let onClick:any;
+    export let onClick: any;
+    export let disable: boolean = false;
 
     let pos = { x: 0, y: 0 };
     let menu = { h: 0, w: 0 };
@@ -28,29 +29,36 @@
         showMenu = false;
     }
 
-    function onBtnClick(e:any,itemId:string){
-        onClick(e,itemId);
+    function onBtnClick(e: any, itemId: string) {
+        onClick(e, itemId);
     }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-    on:contextmenu|preventDefault={rightClickContextMenu}
->
-    {#if showMenu}
-        <div style="position: absolute; top:{pos.y}px; left:{pos.x}px">
-            <div class="context-menu">
-                {#each items as item}
-                    <Button buttonType="secondary" onClick={(e:any) => {onBtnClick(e,item)}}>
-                        {item}
-                    </Button>
-                {/each}
-            </div>
-        </div>
-    {/if}
+{#if disable}
     <slot />
-</div>
+{:else}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div on:contextmenu|preventDefault={rightClickContextMenu}>
+        {#if showMenu}
+            <div style="position: absolute; top:{pos.y}px; left:{pos.x}px">
+                <div class="context-menu">
+                    {#each items as item}
+                        <Button
+                            buttonType="secondary"
+                            onClick={(e: any) => {
+                                onBtnClick(e, item);
+                            }}
+                        >
+                            {item}
+                        </Button>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+        <slot />
+    </div>
+{/if}
 
 <svelte:window on:click={onPageClick} />
 
