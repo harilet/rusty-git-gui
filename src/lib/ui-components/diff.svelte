@@ -1,23 +1,6 @@
 <script lang="ts">
   export let diff: any[];
 
-  $: {
-    console.log(diff);
-    // diff = diff.filter(function (line) {
-    //   if (startCharIsAdd(line)) {
-    //     return true;
-    //   } else if (startCharIsSubstract(line)) {
-    //     return true;
-    //   } else if (startCharIsBlank(line)) {
-    //     if (startCharIsAt(line)) {
-    //       return false;
-    //     }
-    //     return true;
-    //   }
-    //   return false;
-    // });
-  }
-
   function startCharIsAdd(line: any) {
     return line['change_type'] == "+";
   }
@@ -54,22 +37,23 @@
 
 <div class="main-file-change-area">
   <div class="overflow-auto-style">
-    {#each diff as line}
-      <div
-        class="lines {lineClass(line)} flex"
-      >
-      <div class="from-change-line-no">
-        {getFromLineNo(line)}
-      </div>
-      <div class="to-change-line-no">
-        {getToLineNo(line)}
-      </div>
-      <div class="main-text">
-        {formatString(line)}
-      </div>
-        
-      </div>
-    {/each}
+    <table>
+      <tbody>
+      {#each diff as line}
+      <tr class="lines {lineClass(line)} flex">
+        <td>
+          <div class="from-change-line-no">{getFromLineNo(line)}</div>
+        </td>
+        <td>
+          <div class="to-change-line-no">{getToLineNo(line)}</div>
+        </td>
+        <td>
+          <div class="main-text">{formatString(line)}</div>
+        </td>
+      </tr>
+      {/each}
+    </tbody>
+    </table>
   </div>
 </div>
 
@@ -102,18 +86,26 @@
     padding: 1px;
     margin: 2px;
     width: 25px;
+    white-space: pre;
+    margin-right: 5px;
   }
 
   .to-change-line-no{
+    white-space: pre;
     padding: 1px;
     margin: 2px;
     width: 25px;
     float: right;
     text-align: right;
+    padding-right: 0px;
+    margin-right: 0px;
+    margin-left: 5px;
   }
 
   .main-text{
     padding: 1px;
     margin: 2px;
+    padding-left: 0px;
+    margin-left: 0px;
   }
 </style>
