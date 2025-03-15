@@ -30,6 +30,14 @@ struct RemoteDetails {
     url: String,
 }
 
+#[derive(Clone, serde::Serialize, Debug)]
+struct ChangeLine {
+    from_no: String,
+    to_no: String,
+    content: String,
+    change_type: String,
+}
+
 #[tauri::command]
 fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
     thread::spawn(move || {
@@ -45,7 +53,6 @@ fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
         match result {
             Ok(_) => {}
             Err(e) => {
-                println!("{:#?}", e);
                 app.emit("clone-complete", "failure").unwrap();
             }
         }
@@ -162,36 +169,12 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
         .tree()
         .unwrap();
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
+
     repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), Some(&mut opts))
         .unwrap()
         .print(DiffFormat::Patch, |_d, _h, l| {
-            match l.origin() {
-                '+' | '-' | ' ' => {
-                    diff_data.push(l.origin());
-                }
-                _ => {}
-            }
-
-            match l.old_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-
-            match l.new_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {} ", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _ "));
-                }
-            }
-
-            diff_data.push_str(str::from_utf8(l.content()).unwrap());
+            diff_data.push(format_change_line_item(l,_d));
             true
         })
         .unwrap();
@@ -306,36 +289,12 @@ fn get_unstaged_changes(app: AppHandle, repo_location: String, path: String) {
         .ignore_whitespace_eol(false)
         .pathspec(path.clone());
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
 
     repo.diff_index_to_workdir(Some(&repo.index().unwrap()), Some(&mut diff_opts))
         .unwrap()
         .print(DiffFormat::Patch, |_d, _h, l| {
-            match l.origin() {
-                '+' | '-' | ' ' => {
-                    diff_data.push(l.origin());
-                }
-                _ => {}
-            }
-
-            match l.old_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-
-            match l.new_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-            diff_data.push_str(str::from_utf8(l.content()).unwrap());
+            diff_data.push(format_change_line_item(l,_d));
             true
         })
         .unwrap();
@@ -356,7 +315,7 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
         .pathspec(path.clone());
     let old_tree = repo.head().unwrap().peel_to_tree().unwrap();
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
     repo.diff_tree_to_index(
         Some(&old_tree),
         Some(&repo.index().unwrap()),
@@ -364,35 +323,10 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
     )
     .unwrap()
     .print(DiffFormat::Patch, |_d, _h, l| {
-        match l.origin() {
-            '+' | '-' | ' ' => {
-                diff_data.push(l.origin());
-            }
-            _ => {}
-        }
-
-        match l.old_lineno() {
-            Some(num) => {
-                diff_data.push_str(&format!(" {}", num));
-            }
-            None => {
-                diff_data.push_str(&format!(" _"));
-            }
-        }
-
-        match l.new_lineno() {
-            Some(num) => {
-                diff_data.push_str(&format!(" {} ", num));
-            }
-            None => {
-                diff_data.push_str(&format!(" _ "));
-            }
-        }
-        diff_data.push_str(str::from_utf8(l.content()).unwrap());
+        diff_data.push(format_change_line_item(l,_d));
         true
     })
     .unwrap();
-    println!("{}", diff_data);
     app.emit("changes", diff_data.clone()).unwrap();
 }
 
@@ -451,7 +385,6 @@ fn new_branch(
     force: bool,
 ) {
     let repo = Repository::open(repo_location).unwrap();
-    println!("{},{},{}", from_branch_name, new_branch_name, force);
     let current_branch = repo
         .find_branch(&from_branch_name, BranchType::Local)
         .unwrap();
@@ -545,9 +478,9 @@ fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
         )
     });
 
-    remote_callbacks.certificate_check(|_str1,str2|{
+    remote_callbacks.certificate_check(|_str1, str2| {
         println!("certificate check");
-        println!("{:#?}",str2);
+        println!("{:#?}", str2);
         Ok(git2::CertificateCheckStatus::CertificateOk)
     });
 
@@ -575,10 +508,9 @@ fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
 }
 
 #[tauri::command]
-fn create_repo_window(repo_location: String){
+fn create_repo_window(repo_location: String) {
     Repository::init(std::path::PathBuf::from(repo_location)).unwrap();
     return;
-
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -664,4 +596,58 @@ fn get_projects_list() -> Vec<String> {
     let file_data = fs::read(project_list_path).unwrap();
     let data: Vec<String> = serde_json::from_slice(&file_data[..]).unwrap();
     data
+}
+
+fn format_change_line_item(l: git2::DiffLine,d:git2::DiffDelta) -> ChangeLine {
+    let mut temp_data = ChangeLine {
+        content: "".to_string(),
+        to_no: "".to_string(),
+        from_no: "".to_string(),
+        change_type: "".to_string(),
+    };
+
+    let mut content=str::from_utf8(l.content()).unwrap().to_string();
+
+    temp_data.change_type = l.origin().to_string();
+
+    match l.old_lineno() {
+        Some(num) => {
+            temp_data.from_no = format!("{}", num);
+        }
+        None => {
+            temp_data.from_no = format!("");
+        }
+    }
+
+    match l.new_lineno() {
+        Some(num) => {
+            temp_data.to_no = format!("{}", num);
+        }
+        None => {
+            temp_data.to_no = format!("",);
+        }
+    }
+    
+
+    if temp_data.change_type=="F" {
+        match d.status() {
+            git2::Delta::Modified => {
+                temp_data.change_type= "M".to_owned();
+            },
+            git2::Delta::Added => {
+                temp_data.change_type= "A".to_owned();
+            },
+            git2::Delta::Deleted => {
+                temp_data.change_type= "D".to_owned();
+            },
+            git2::Delta::Renamed => {
+                temp_data.change_type= "R".to_owned();
+            },
+            _ =>{}
+        };
+        content=d.new_file().path().unwrap().to_str().unwrap().to_string();
+    }
+
+    temp_data.content = content;
+    temp_data
 }

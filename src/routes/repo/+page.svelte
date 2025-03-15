@@ -25,7 +25,7 @@
   $: mainTab = "graph";
   $: unstagedFiles = [];
   $: stagedFiles = [];
-  $: changes = "";
+  $: changes = [];
   $: makeCommitMessage = "";
   $: newBranchFrom = selectedBranch;
   $: force = false;
@@ -47,8 +47,8 @@
       getAllBranchs();
     }
 
-    listen("changes", function (data) {
-      changes = changes + (data.payload as string);
+    listen("changes", function (data:any) {
+      changes = data.payload;
     });
 
     invoke("get_config", {
@@ -76,7 +76,6 @@
     invoke("get_branches", { repoLocation: location }).then(function (
       data: any,
     ) {
-      console.log(data);
       for (let i = 0; i < data["branches"]["local"].length; i++) {
         localBranchList = [...localBranchList, data["branches"]["local"][i]];
       }
@@ -111,7 +110,7 @@
   }
 
   function getFileChanges(commit_id: string) {
-    changes = "";
+    changes = [];
     invoke("get_file_changes", {
       repoLocation: location,
       commitId: commit_id,
@@ -119,7 +118,7 @@
   }
 
   function tabChange(tabName: string) {
-    changes = "";
+    changes = [];
     mainTab = tabName;
     if (tabName == "commit") {
       getChangeFiles();
@@ -149,13 +148,13 @@
 
   function getChanges(type: string, path: string) {
     if (type == "unstaged") {
-      changes = "";
+      changes = [];
       invoke("get_unstaged_changes", {
         repoLocation: location,
         path: path,
       });
     } else if (type == "staged") {
-      changes = "";
+      changes = [];
       invoke("get_staged_changes", {
         repoLocation: location,
         path: path,
