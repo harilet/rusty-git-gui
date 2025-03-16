@@ -370,7 +370,7 @@
         </div>
       </DialogBox>
     </div>
-    <div class="w-5/6">
+    <div class="w-full">
       <div class="flex flex-row h-1/10">
         <Push
           location={location ?? ""}
@@ -379,7 +379,7 @@
           {selectedBranch}
         />
       </div>
-      <div class="flex h-1/10">
+      <div class="flex h-1/10 tab-view-area">
         <TabSelect
           items={["graph", "commit"]}
           onSelected={tabChange}
@@ -507,7 +507,9 @@
 
   .graph-area {
     display: flex;
-    height: 100%;
+    height: 99%;
+    border-radius: 5px;
+    background: #0F0F10;
   }
 
   .commit-changes {
@@ -518,7 +520,14 @@
 
   .commit-message-area {
     width: 50%;
-    height: 100%;
+    height: 100%;    
+  }
+
+  .tab-view-area{
+    background: #151518;
+    height: 48px;
+    border: solid 1px #27272a;
+    border-radius: 4px;
   }
 
   .container {
@@ -532,11 +541,10 @@
 
   .main-area {
     width: -webkit-fill-available;
-    height: calc(100% - 60px);
+    height: calc(100% - 82px);
   }
 
   .commit-message {
-    margin: 5px;
     padding: 5px;
     width: -webkit-fill-available;
     text-align: start;

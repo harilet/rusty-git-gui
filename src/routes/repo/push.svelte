@@ -53,5 +53,5 @@
 </DialogBox>
 
 <div>
-    <Button onClick={showPushDialog}>Push</Button>
+    <Button buttonType="secondary" onClick={showPushDialog}><div>Push</div></Button>
 </div>

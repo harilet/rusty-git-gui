@@ -36,8 +36,8 @@
 </script>
 
 <div class="main-file-change-area">
-  <div class="overflow-auto-style">
-    <table>
+  <div class="overflow-auto-style w-full">
+    <table class="w-full">
       <tbody>
       {#each diff as line}
       <tr class="lines {lineClass(line)} flex">

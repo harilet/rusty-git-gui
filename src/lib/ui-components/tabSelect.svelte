@@ -15,23 +15,42 @@
 <div class="flex tab-group">
     {#each items as item}
         <!-- svelte-ignore a11y_invalid_attribute -->
-        <a class="pr-4 pl-4 tab-item {item===selected?'tab-item-selected':''}" href="#" on:click={(e) => handleClick(e, item)}>
-            {item}
+        <a
+            class="pr-4 pl-4 tab-item"
+            href="#"
+            on:click={(e) => handleClick(e, item)}
+        >
+            <div class="mt-auto mb-auto">
+                {item}
+            </div>
+            <span class="indicator {item === selected ? 'indicate' : ''}">
+            </span>
         </a>
     {/each}
 </div>
 
 <style>
     .tab-group {
-        border: solid 1px #ccc;
         border-radius: 5px;
     }
 
-    .tab-item:hover{
+    .tab-item {
+        display: flex;
+        flex-direction: column;
+        border-radius: 4px;
+    }
+
+    .tab-item:hover {
         background: #ffffff40;
     }
 
-    .tab-item-selected{
-        background: #ffffff40;
+    .indicator {
+        margin-top: auto;
+        background: transparent;
+        height: 3px;
+    }
+
+    .indicate {
+        background: white;
     }
 </style>
