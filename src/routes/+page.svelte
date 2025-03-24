@@ -66,18 +66,15 @@
     });
     listen("clone-complete", function (data) {
       inProgress = false;
-      console.log(data);
       openRepo();
     });
   }
 
   function openRepo() {
-    console.log(repoLocation);
     invoke("open_repo_window", { repoLocation: repoLocation });
   }
 
   function creatRepo() {
-    console.log(repoLocation);
     invoke("create_repo_window", { repoLocation: repoLocation }).then(()=>{
       invoke("open_repo_window", { repoLocation: repoLocation });
     });

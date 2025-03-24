@@ -15,6 +15,7 @@
   import BranchItem from "./branchItem.svelte";
   import TabSelect from "$lib/ui-components/tabSelect.svelte";
   import CollapsibleSection from "$lib/ui-components/collapsibleSection.svelte";
+    import Pull from "./pull.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -25,7 +26,7 @@
   $: mainTab = "graph";
   $: unstagedFiles = [];
   $: stagedFiles = [];
-  $: changes = "";
+  $: changes = [];
   $: makeCommitMessage = "";
   $: newBranchFrom = selectedBranch;
   $: force = false;
@@ -35,6 +36,7 @@
   $: remotesList = [];
   $: newRemoteName = "";
   $: newRemoteURL = "";
+  $: currentBranchRemoteCommitDelta=[];
 
   let newBranchDialog: HTMLDialogElement;
   let profileDialog: HTMLDialogElement;
@@ -47,8 +49,8 @@
       getAllBranchs();
     }
 
-    listen("changes", function (data) {
-      changes = changes + (data.payload as string);
+    listen("changes", function (data:any) {
+      changes = data.payload;
     });
 
     invoke("get_config", {
@@ -76,7 +78,6 @@
     invoke("get_branches", { repoLocation: location }).then(function (
       data: any,
     ) {
-      console.log(data);
       for (let i = 0; i < data["branches"]["local"].length; i++) {
         localBranchList = [...localBranchList, data["branches"]["local"][i]];
       }
@@ -108,10 +109,18 @@
     }).then(function (data: any) {
       commitMessages = data;
     });
+
+    invoke("get_remote_local_drift", {
+        repoLocation: location,
+        branchName: branchName,
+      }).then(function (diffStat: any){
+        console.log(typeof diffStat);
+        currentBranchRemoteCommitDelta=diffStat;
+      });
   }
 
   function getFileChanges(commit_id: string) {
-    changes = "";
+    changes = [];
     invoke("get_file_changes", {
       repoLocation: location,
       commitId: commit_id,
@@ -119,7 +128,7 @@
   }
 
   function tabChange(tabName: string) {
-    changes = "";
+    changes = [];
     mainTab = tabName;
     if (tabName == "commit") {
       getChangeFiles();
@@ -149,13 +158,13 @@
 
   function getChanges(type: string, path: string) {
     if (type == "unstaged") {
-      changes = "";
+      changes = [];
       invoke("get_unstaged_changes", {
         repoLocation: location,
         path: path,
       });
     } else if (type == "staged") {
-      changes = "";
+      changes = [];
       invoke("get_staged_changes", {
         repoLocation: location,
         path: path,
@@ -293,7 +302,7 @@
 
 <main class="container overflow-auto-style">
   <div class="flex w-full">
-    <div class="branch-area overflow-auto-style flex flex-col px-2 w-64">
+    <div class="branch-area overflow-auto-style flex flex-col pl-2 w-64">
       <div style="margin: 0px 5px; --width: 100%;">
         <Button
           onClick={(_: any) => {
@@ -371,7 +380,7 @@
         </div>
       </DialogBox>
     </div>
-    <div class="w-5/6">
+    <div style="width: 80vw;">
       <div class="flex flex-row h-1/10">
         <Push
           location={location ?? ""}
@@ -379,8 +388,22 @@
           remoteList={remotesList}
           {selectedBranch}
         />
+
+        <Pull 
+        location={location ?? ""}
+          branchList={localBranchList}
+          remoteList={remotesList}
+          {selectedBranch}
+        />
+        <div class="p-2">
+          {currentBranchRemoteCommitDelta[0]} to push
+        </div>
+        <div class="p-2">
+          {currentBranchRemoteCommitDelta[1]} to pull
+        </div>
+        
       </div>
-      <div class="flex h-1/10">
+      <div class="flex h-1/10 tab-view-area">
         <TabSelect
           items={["graph", "commit"]}
           onSelected={tabChange}
@@ -506,9 +529,15 @@
     height: 30px;
   }
 
+  .branch-area{
+    width: 20vw;
+  }
+
   .graph-area {
     display: flex;
-    height: 100%;
+    height: 99%;
+    border-radius: 5px;
+    background: #0F0F10;
   }
 
   .commit-changes {
@@ -519,7 +548,14 @@
 
   .commit-message-area {
     width: 50%;
-    height: 100%;
+    height: 100%;    
+  }
+
+  .tab-view-area{
+    background: #151518;
+    height: 48px;
+    border: solid 1px #27272a;
+    border-radius: 4px;
   }
 
   .container {
@@ -533,11 +569,10 @@
 
   .main-area {
     width: -webkit-fill-available;
-    height: calc(100% - 60px);
+    height: calc(100% - 85px)
   }
 
   .commit-message {
-    margin: 5px;
     padding: 5px;
     width: -webkit-fill-available;
     text-align: start;

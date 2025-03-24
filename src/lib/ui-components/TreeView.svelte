@@ -2,7 +2,6 @@
   export let tree;
 
   function getLabel(data: string) {
-    console.log(data);
     return data.split("/")[0];
   }
 

@@ -11,47 +11,46 @@
     export let selectedBranch;
 
     onMount(() => {
-        pushBranchName=selectedBranch;
+        pullBranchName=selectedBranch;
         remoteName=remoteList[0]['name'];
     });
 
+    let pullDialog: HTMLDialogElement;
 
-    let pushDialog: HTMLDialogElement;
-
-    $: pushBranchName = "";
+    $: pullBranchName = "";
     $: remoteName = "";
 
-    function showPushDialog() {
-        pushDialog.showModal();
+    function showPullDialog() {
+        pullDialog.showModal();
     }
 
-    function pushBranch() {
-        invoke("push_to_remote", {
+    function pullBranch() {
+        invoke("pull_from_remote", {
             repoLocation: location,
-            branchName: pushBranchName,
+            branchName: pullBranchName,
             remote: remoteName,
         });
     }
 </script>
 
-<DialogBox bind:dialog={pushDialog}>
+<DialogBox bind:dialog={pullDialog}>
     <div class="flex flex-col m-8 w-40">
         <label for="remoteName">Branch</label>
-        <select class="mb-4" bind:value={pushBranchName}>
+        <select class="mb-4" bind:value={pullBranchName}>
             {#each branchList as branch}
-              <option value={branch} selected>{branch}</option>
+                <option value={branch} selected>{branch}</option>
             {/each}
-          </select>
+        </select>
         <label for="remoteUrl">Remote</label>
         <select class="mb-4" bind:value={remoteName}>
             {#each remoteList as remote}
-              <option value={remote['name']} selected>{remote['name']}</option>
+                <option value={remote['name']} selected>{remote['name']}</option>
             {/each}
-          </select>
-        <Button buttonType="secondary" onClick={pushBranch}>Push</Button>
+        </select>
+        <Button buttonType="secondary" onClick={pullBranch}>Pull</Button>
     </div>
 </DialogBox>
 
 <div>
-    <Button buttonType="secondary" onClick={showPushDialog}><div>Push</div></Button>
+    <Button buttonType="secondary" onClick={showPullDialog}><div>Pull</div></Button>
 </div>

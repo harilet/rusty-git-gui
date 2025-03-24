@@ -1,103 +1,59 @@
 <script lang="ts">
-  export let diff: string;
+  export let diff: any[];
 
-  $: oldChanges = [""];
-  $: newChanges = [""];
-
-  $: {
-    let diffAsLines = splitLines();
-    if (diff != "") {
-      for (var i = 0; i < diffAsLines.length; i++) {
-        let change = diffAsLines[i];
-
-        if (startCharIsAdd(change)) {
-          var addLineList = change.split(" ");
-          addLineList.splice(1, 1);
-          var addLine = addLineList.join(" ");
-
-          oldChanges = [...oldChanges, " "];
-          newChanges = [...newChanges, addLine];
-        } else if (startCharIsSubstract(change)) {
-          var substractLineList = change.split(" ");
-          substractLineList.splice(2, 1);
-          var substractLine = substractLineList.join(" ");
-
-          oldChanges = [...oldChanges, substractLine];
-          if (startCharIsAdd(diffAsLines[i + 1])) {
-            var substracAddLineList = diffAsLines[i + 1].split(" ");
-            substracAddLineList.splice(1, 1);
-            var substracAddLine = substracAddLineList.join(" ");
-
-            newChanges = [...newChanges, substracAddLine];
-            i = i + 1;
-          } else {
-            newChanges = [...newChanges, " "];
-          }
-        } else if (startCharIsAt(change)) {
-          oldChanges = [...oldChanges, change, " ", " "];
-          newChanges = [...newChanges, " ", " ", " "];
-        } else if (startCharIsBlank(change)) {
-          var oldLineList = change.split(" ");
-          oldLineList.splice(3, 1);
-          var oldLine = oldLineList.join(" ");
-
-          var newLineList = change.split(" ");
-          newLineList.splice(2, 1);
-          var newLine = newLineList.join(" ");
-
-          oldChanges = [...oldChanges, oldLine];
-          newChanges = [...newChanges, newLine];
-        }
-        if (startCharIsAt(diffAsLines[i + 1])) {
-          oldChanges = [...oldChanges, " ", " "];
-          newChanges = [...newChanges, " ", " "];
-        }
-        if(i==diffAsLines.length-1){
-          oldChanges = [...oldChanges, " ", " "];
-          newChanges = [...newChanges, " ", " "];
-        }
-      }
-    } else {
-      oldChanges = [""];
-      newChanges = [""];
-    }
+  function startCharIsAdd(line: any) {
+    return line['change_type'] == "+";
   }
 
-  function splitLines() {
-    return diff.split("\n");
-  }
-
-  function startCharIsAdd(line: string) {
-    return line[0] == "+";
-  }
-
-  function startCharIsSubstract(line: string) {
-    return line[0] == "-";
-  }
-
-  function startCharIsBlank(line: string) {
-    return line[0] == " ";
+  function startCharIsSubstract(line: any) {
+    return line['change_type'] == "-";
   }
 
   function startCharIsAt(line: string) {
-    return line.slice(0,4) == " _ _";
+    return line.slice(0, 4) == " _ _";
+  }
+
+  function formatString(diff: any) {
+    return diff['content'];
+  }
+
+  function lineClass(line: string){
+    if(startCharIsAdd(line)){
+      return 'change-add';
+    }else if (startCharIsSubstract(line)){
+      return 'change-remove';
+    }
+    return '';
+  }
+
+  function getFromLineNo(line: any){
+    return line['from_no'];
+  }
+
+  function getToLineNo(line: any){
+    return line['to_no'];
   }
 </script>
- 
+
 <div class="main-file-change-area">
-  <div class="old-change overflow-auto-style">
-    {#each oldChanges as line}
-      <div class="lines">
-        {line}
-      </div>
-    {/each}
-  </div>
-  <div class="new-change overflow-auto-style">
-    {#each newChanges as line}
-      <div class="lines">
-        {line}
-      </div>
-    {/each}
+  <div class="overflow-auto-style w-full">
+    <table class="w-full">
+      <tbody>
+      {#each diff as line}
+      <tr class="lines {lineClass(line)} flex">
+        <td>
+          <div class="from-change-line-no">{getFromLineNo(line)}</div>
+        </td>
+        <td>
+          <div class="to-change-line-no">{getToLineNo(line)}</div>
+        </td>
+        <td>
+          <div class="main-text">{formatString(line)}</div>
+        </td>
+      </tr>
+      {/each}
+    </tbody>
+    </table>
   </div>
 </div>
 
@@ -109,17 +65,47 @@
 
   .lines {
     white-space: pre;
+    margin: 3px;
+    padding: 2px;
+    border-radius: 2px;
   }
 
   .lines:hover {
     background: #ffffff40;
   }
 
-  .old-change {
-    width: 50%;
+  .change-add {
+    background: #1a7f2266;
   }
 
-  .new-change {
-    width: 50%;
+  .change-remove {
+    background: #7f1a1a66;
+  }
+
+  .from-change-line-no{
+    padding: 1px;
+    margin: 2px;
+    width: 25px;
+    white-space: pre;
+    margin-right: 5px;
+  }
+
+  .to-change-line-no{
+    white-space: pre;
+    padding: 1px;
+    margin: 2px;
+    width: 25px;
+    float: right;
+    text-align: right;
+    padding-right: 0px;
+    margin-right: 0px;
+    margin-left: 5px;
+  }
+
+  .main-text{
+    padding: 1px;
+    margin: 2px;
+    padding-left: 0px;
+    margin-left: 0px;
   }
 </style>

@@ -1,4 +1,5 @@
 // use auth_git2::GitAuthenticator;
+use auth_git2::GitAuthenticator;
 use core::str;
 use git2::build::{CheckoutBuilder, RepoBuilder};
 use git2::{BranchType, DiffFormat, DiffOptions, ObjectType, Repository};
@@ -30,6 +31,14 @@ struct RemoteDetails {
     url: String,
 }
 
+#[derive(Clone, serde::Serialize, Debug)]
+struct ChangeLine {
+    from_no: String,
+    to_no: String,
+    content: String,
+    change_type: String,
+}
+
 #[tauri::command]
 fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
     thread::spawn(move || {
@@ -44,8 +53,7 @@ fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
             .clone(&repo_url, Path::new(&repo_location));
         match result {
             Ok(_) => {}
-            Err(e) => {
-                println!("{:#?}", e);
+            Err(_e) => {
                 app.emit("clone-complete", "failure").unwrap();
             }
         }
@@ -162,36 +170,12 @@ fn get_file_changes(app: AppHandle, repo_location: String, commit_id: String) {
         .tree()
         .unwrap();
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
+
     repo.diff_tree_to_tree(Some(&parent_tree), Some(&tree), Some(&mut opts))
         .unwrap()
         .print(DiffFormat::Patch, |_d, _h, l| {
-            match l.origin() {
-                '+' | '-' | ' ' => {
-                    diff_data.push(l.origin());
-                }
-                _ => {}
-            }
-
-            match l.old_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-
-            match l.new_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {} ", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _ "));
-                }
-            }
-
-            diff_data.push_str(str::from_utf8(l.content()).unwrap());
+            diff_data.push(format_change_line_item(l, _d));
             true
         })
         .unwrap();
@@ -306,36 +290,12 @@ fn get_unstaged_changes(app: AppHandle, repo_location: String, path: String) {
         .ignore_whitespace_eol(false)
         .pathspec(path.clone());
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
 
     repo.diff_index_to_workdir(Some(&repo.index().unwrap()), Some(&mut diff_opts))
         .unwrap()
         .print(DiffFormat::Patch, |_d, _h, l| {
-            match l.origin() {
-                '+' | '-' | ' ' => {
-                    diff_data.push(l.origin());
-                }
-                _ => {}
-            }
-
-            match l.old_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-
-            match l.new_lineno() {
-                Some(num) => {
-                    diff_data.push_str(&format!(" {}", num));
-                }
-                None => {
-                    diff_data.push_str(&format!(" _"));
-                }
-            }
-            diff_data.push_str(str::from_utf8(l.content()).unwrap());
+            diff_data.push(format_change_line_item(l, _d));
             true
         })
         .unwrap();
@@ -356,7 +316,7 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
         .pathspec(path.clone());
     let old_tree = repo.head().unwrap().peel_to_tree().unwrap();
 
-    let mut diff_data: String = "".to_string();
+    let mut diff_data: Vec<ChangeLine> = vec![];
     repo.diff_tree_to_index(
         Some(&old_tree),
         Some(&repo.index().unwrap()),
@@ -364,35 +324,10 @@ fn get_staged_changes(app: AppHandle, repo_location: String, path: String) {
     )
     .unwrap()
     .print(DiffFormat::Patch, |_d, _h, l| {
-        match l.origin() {
-            '+' | '-' | ' ' => {
-                diff_data.push(l.origin());
-            }
-            _ => {}
-        }
-
-        match l.old_lineno() {
-            Some(num) => {
-                diff_data.push_str(&format!(" {}", num));
-            }
-            None => {
-                diff_data.push_str(&format!(" _"));
-            }
-        }
-
-        match l.new_lineno() {
-            Some(num) => {
-                diff_data.push_str(&format!(" {} ", num));
-            }
-            None => {
-                diff_data.push_str(&format!(" _ "));
-            }
-        }
-        diff_data.push_str(str::from_utf8(l.content()).unwrap());
+        diff_data.push(format_change_line_item(l, _d));
         true
     })
     .unwrap();
-    println!("{}", diff_data);
     app.emit("changes", diff_data.clone()).unwrap();
 }
 
@@ -451,7 +386,6 @@ fn new_branch(
     force: bool,
 ) {
     let repo = Repository::open(repo_location).unwrap();
-    println!("{},{},{}", from_branch_name, new_branch_name, force);
     let current_branch = repo
         .find_branch(&from_branch_name, BranchType::Local)
         .unwrap();
@@ -515,6 +449,36 @@ fn add_remote(repo_location: String, remote_name: String, remote_url: String) {
 }
 
 #[tauri::command]
+fn get_remote_local_drift(repo_location: String, branch_name: String) -> (usize, usize) {
+    let repo = Repository::open(repo_location).unwrap();
+    
+    let head = repo.revparse_single(&branch_name).unwrap().id();
+
+    let temp = repo.revparse_ext("@{u}");
+    return match temp {
+        Ok(data) => {
+            if let (upstream, _) = data {
+                return match repo.graph_ahead_behind(head, upstream.id()) {
+                    Ok((commits_ahead, commits_behind)) => {
+                        println!("{:?}", commits_behind);
+                        (commits_ahead , commits_behind)
+                    }
+                    Err(e) => {
+                        println!("{:#?}", e);
+                        return (0, 0);
+                    }
+                };
+            }
+            (0, 0)
+        }
+        Err(e) => {
+            println!("{:#?}", e);
+            (0, 0)
+        }
+    };
+}
+
+#[tauri::command]
 fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
     let repo = Repository::open(repo_location).unwrap();
     let mut origin = repo.find_remote(&remote).unwrap();
@@ -525,61 +489,67 @@ fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
     let branch_ref_name = branch_ref.name().unwrap();
     repo.set_head(branch_ref_name).unwrap();
 
-    // let auth=GitAuthenticator::default().add_ssh_key_from_file(std::path::Path::new("C:/Users/Asus/.ssh/github/id_rsa"), None);
+    let mut remote_callbacks = git2::RemoteCallbacks::new();
+    remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
+        println!(
+            "url: {:#?}\nusername: {:#?}:\ntype: {:#?}",
+            _url,
+            _username_from_url.unwrap(),
+            _allowed_types
+        );
+
+        git2::Cred::ssh_key_from_agent(_username_from_url.unwrap())
+    });
+
+    remote_callbacks.certificate_check(|_str1, str2| {
+        println!("certificate check");
+        println!("{:#?}", str2);
+        Ok(git2::CertificateCheckStatus::CertificateOk)
+    });
+
+    let mut push_options=git2::PushOptions::new();
+    let mut_push_options=push_options.remote_callbacks(remote_callbacks);
+
+    match origin.push(&[branch_ref_name],Some(mut_push_options)) {
+        Ok(_) => {println!("push-pushed to remote")},
+        Err(e) => {println!("push-failed to push to remote: {}",e)},
+    };
+}
+
+#[tauri::command]
+fn pull_from_remote(repo_location: String, branch_name: String, remote: String) {
+    let repo = Repository::open(repo_location).unwrap();
+    let mut origin = repo.find_remote(&remote).unwrap();
+    let branch = repo.find_branch(&branch_name, BranchType::Local).unwrap();
 
     let mut remote_callbacks = git2::RemoteCallbacks::new();
     remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
         println!(
-            "{:#?}:{:#?}:{:#?}",
-            _url, _username_from_url, _allowed_types
-        );
-        println!(
-            "{:#?}",
-            format!("{}/.ssh/github/id_rsa", env::var("HOME").unwrap())
-        );
-        git2::Cred::ssh_key(
+            "url: {:#?}\nusername: {:#?}:\ntype: {:#?}",
+            _url,
             _username_from_url.unwrap(),
-            None,
-            std::path::Path::new("C:/Users/Asus/.ssh/github/id_rsa"),
-            None,
-        )
+            _allowed_types
+        );
+
+        git2::Cred::ssh_key_from_agent(_username_from_url.unwrap())
     });
 
-    remote_callbacks.certificate_check(|_str1,str2|{
-        println!("certificate check");
-        println!("{:#?}",str2);
-        Ok(git2::CertificateCheckStatus::CertificateOk)
-    });
+    let mut fetch_options=git2::FetchOptions::new();
+    let mut_fetch_options=fetch_options.remote_callbacks(remote_callbacks);
 
-    // match auth.push(&repo, &mut origin,&[&branch_ref_name]) {
-    //     Ok(_) => {println!("pushed to remote")},
-    //     Err(e) => {println!("failed: {}",e)},
-    // };
-
-    match origin.connect_auth(git2::Direction::Push, Some(remote_callbacks), None) {
-        Ok(_) => {
-            println!("connect_auth-pushed to remote")
-        }
-        Err(e) => {
-            println!("{}", e)
-        }
-    };
-
-    // let mut push_options=git2::PushOptions::new();
-    // let mut_push_options=push_options.remote_callbacks(remote_callbacks);
-
-    // match origin.push(&[branch_ref_name],Some(mut_push_options)) {
-    //     Ok(_) => {println!("push-pushed to remote")},
-    //     Err(e) => {println!("push-failed to push to remote: {}",e)},
-    // };
+    let branch_ref = branch.into_reference();
+    let branch_ref_name = branch_ref.name().unwrap();
+    origin.fetch(&[branch_ref_name], Some(mut_fetch_options), None).unwrap();
+    repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force())).unwrap();
 }
 
 #[tauri::command]
-fn create_repo_window(repo_location: String){
+fn create_repo_window(repo_location: String) {
     Repository::init(std::path::PathBuf::from(repo_location)).unwrap();
     return;
-
 }
+
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -618,6 +588,8 @@ pub fn run() {
             add_remote,
             push_to_remote,
             create_repo_window,
+            get_remote_local_drift,
+            pull_from_remote,
         ])
         .setup(|app| {
             let main_window = app.get_webview_window("main").unwrap();
@@ -664,4 +636,57 @@ fn get_projects_list() -> Vec<String> {
     let file_data = fs::read(project_list_path).unwrap();
     let data: Vec<String> = serde_json::from_slice(&file_data[..]).unwrap();
     data
+}
+
+fn format_change_line_item(l: git2::DiffLine, d: git2::DiffDelta) -> ChangeLine {
+    let mut temp_data = ChangeLine {
+        content: "".to_string(),
+        to_no: "".to_string(),
+        from_no: "".to_string(),
+        change_type: "".to_string(),
+    };
+
+    let mut content = str::from_utf8(l.content()).unwrap().to_string();
+
+    temp_data.change_type = l.origin().to_string();
+
+    match l.old_lineno() {
+        Some(num) => {
+            temp_data.from_no = format!("{}", num);
+        }
+        None => {
+            temp_data.from_no = format!("");
+        }
+    }
+
+    match l.new_lineno() {
+        Some(num) => {
+            temp_data.to_no = format!("{}", num);
+        }
+        None => {
+            temp_data.to_no = format!("",);
+        }
+    }
+
+    if temp_data.change_type == "F" {
+        match d.status() {
+            git2::Delta::Modified => {
+                temp_data.change_type = "M".to_owned();
+            }
+            git2::Delta::Added => {
+                temp_data.change_type = "A".to_owned();
+            }
+            git2::Delta::Deleted => {
+                temp_data.change_type = "D".to_owned();
+            }
+            git2::Delta::Renamed => {
+                temp_data.change_type = "R".to_owned();
+            }
+            _ => {}
+        };
+        content = d.new_file().path().unwrap().to_str().unwrap().to_string();
+    }
+
+    temp_data.content = content;
+    temp_data
 }
