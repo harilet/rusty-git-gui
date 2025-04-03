@@ -65,7 +65,7 @@
 <style>
     .context-menu {
         display: inline-flex;
-        border: 1px #999 solid;
+        border: var(--border);
         width: 170px;
         background-color: var(--background-color);
         color: var(--on-background-color);

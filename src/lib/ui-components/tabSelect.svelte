@@ -41,7 +41,7 @@
     }
 
     .tab-item:hover {
-        background: #ffffff40;
+        background: var(--hover);
     }
 
     .indicator {
@@ -51,6 +51,6 @@
     }
 
     .indicate {
-        background: white;
+        background: var(--primary-color);
     }
 </style>

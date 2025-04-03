@@ -475,7 +475,10 @@ fn get_remote_local_drift(repo_location: String, branch_name: String) -> (usize,
 }
 
 #[tauri::command]
-fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
+fn push_to_remote(app: AppHandle, repo_location: String, branch_name: String, remote: String) {
+
+    error_emitter(app, "push-failed to push to remote: {}".to_string());
+    return;
     let repo = Repository::open(repo_location).unwrap();
     let mut origin = repo.find_remote(&remote).unwrap();
 
@@ -487,13 +490,6 @@ fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
 
     let mut remote_callbacks = git2::RemoteCallbacks::new();
     remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
-        println!(
-            "url: {:#?}\nusername: {:#?}:\ntype: {:#?}",
-            _url,
-            _username_from_url.unwrap(),
-            _allowed_types
-        );
-
         git2::Cred::ssh_key_from_agent(_username_from_url.unwrap())
     });
 
@@ -511,7 +507,7 @@ fn push_to_remote(repo_location: String, branch_name: String, remote: String) {
             println!("push-pushed to remote")
         }
         Err(e) => {
-            println!("push-failed to push to remote: {}", e)
+            error_emitter(app, format!("push-failed to push to remote: {}", e))
         }
     };
 }
@@ -690,4 +686,8 @@ fn format_change_line_item(l: git2::DiffLine, d: git2::DiffDelta) -> ChangeLine 
 
     temp_data.content = content;
     temp_data
+}
+
+fn error_emitter(app: AppHandle, message:String){
+    app.emit("error", message).unwrap();
 }

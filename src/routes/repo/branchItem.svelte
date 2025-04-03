@@ -106,10 +106,10 @@
   }
 
   .branch-name:hover {
-    background: #ffffff40;
+    background: var(--hover);
   }
 
   .branch-selected {
-    background: #ffffff40;
+    background: var(--selected);
   }
 </style>

@@ -24,7 +24,7 @@
 
 <style>
     dialog {
-        border: solid 1px rgb(255 255 255 / 30%);
+        border: var(--border);
         background: var(--background-color);
         color: var(--on-background-color);
         border-radius: 5px;

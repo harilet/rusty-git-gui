@@ -18,11 +18,14 @@
     %sveltekit.head%
     <style>
       :root {
-        --primary-color: #FFFFFF;
-        --on-primary-color: #000000;
-        --background-color: #000000;
-        --on-background-color: #FFFFFF;
-        --semi-white: rgb(255 255 255 / 0.1);
+        --primary-color: #81a1c1;
+        --primary-disabled-color: #5e81ac;
+        --background-color: #292e39;
+        --accent: #81a1c10d;
+        --border: solid 1px var(--accent);
+        --on-background-color: #d8dee9;
+        --hover: #81a1c129;
+        --selected: #81a1c154;
       }
 
       .html-area {
@@ -34,6 +37,7 @@
         margin: 0px;
         height: 100%;
         color: var(--on-background-color);
+        background: var(--background-color);
       }
 
       select{
@@ -45,14 +49,6 @@
         overflow: auto !important;
         scrollbar-color: var(--primary-color) transparent;
         scrollbar-width: thin;
-      }
-
-      .bg-background\/80{
-        background: hsl(0deg 0% 0% / 80%) !important;
-      }
-
-      .bg-popover{
-        background: hsl(0deg 0% 0% / 80%) !important;
       }
     </style>
   </head>

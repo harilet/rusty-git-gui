@@ -19,7 +19,7 @@
         color: var(--on-background-color);
         border-radius: 3px;
         padding: 3px;
-        border: solid 1px var(--semi-white);
+        border: var(--border);
         width: -webkit-fill-available;
     }
 
@@ -28,6 +28,6 @@
         color: var(--on-background-color);
         border-radius: 3px;
         padding: 3px;
-        border: solid 1px var(--semi-white);
+        border: var(--border);
     }
 </style>

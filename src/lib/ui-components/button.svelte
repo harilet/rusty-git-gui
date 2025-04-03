@@ -45,7 +45,7 @@
     .bth-secondary {
         background: var(--background-color);
         color: var(--on-background-color);
-        border: solid 1px var(--semi-white);
+        border: var(--border);
     }
 
     .bth-select {
@@ -53,6 +53,6 @@
     }
 
     .btn-disabled {
-        background: rgb(255 255 255 / 60%) !important;
+        background: var(--primary-disabled-colo) !important;
     }
 </style>

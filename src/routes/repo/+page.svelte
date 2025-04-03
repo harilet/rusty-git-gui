@@ -15,8 +15,9 @@
   import BranchItem from "./branchItem.svelte";
   import TabSelect from "$lib/ui-components/tabSelect.svelte";
   import CollapsibleSection from "$lib/ui-components/collapsibleSection.svelte";
-    import Pull from "./pull.svelte";
-    import BranchList from "./branchList.svelte";
+  import Pull from "./pull.svelte";
+  import BranchList from "./branchList.svelte";
+  import ErrorToast from "$lib/ui-components/errorToast.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -37,7 +38,8 @@
   $: remotesList = [];
   $: newRemoteName = "";
   $: newRemoteURL = "";
-  $: currentBranchRemoteCommitDelta=[];
+  $: currentBranchRemoteCommitDelta = [];
+  $: error = [""];
 
   let newBranchDialog: HTMLDialogElement;
   let profileDialog: HTMLDialogElement;
@@ -50,8 +52,13 @@
       getAllBranchs();
     }
 
-    listen("changes", function (data:any) {
+    listen("changes", function (data: any) {
       changes = data.payload;
+    });
+
+    listen("error", function (data: any) {
+      let message:string=data.payload;
+      error =[...error,message];
     });
 
     invoke("get_config", {
@@ -79,11 +86,14 @@
     invoke("get_branches", { repoLocation: location }).then(function (
       data: any,
     ) {
-      let tempLocalBranchList: any[]=[];
+      let tempLocalBranchList: any[] = [];
       for (let i = 0; i < data["branches"]["local"].length; i++) {
-        tempLocalBranchList = [...tempLocalBranchList, data["branches"]["local"][i]];
+        tempLocalBranchList = [
+          ...tempLocalBranchList,
+          data["branches"]["local"][i],
+        ];
       }
-      localBranchList=tempLocalBranchList;
+      localBranchList = tempLocalBranchList;
       for (let i = 0; i < data["branches"]["remote"].length; i++) {
         remoteBranchList = [...remoteBranchList, data["branches"]["remote"][i]];
       }
@@ -114,12 +124,12 @@
     });
 
     invoke("get_remote_local_drift", {
-        repoLocation: location,
-        branchName: branchName,
-      }).then(function (diffStat: any){
-        console.log(typeof diffStat);
-        currentBranchRemoteCommitDelta=diffStat;
-      });
+      repoLocation: location,
+      branchName: branchName,
+    }).then(function (diffStat: any) {
+      console.log(typeof diffStat);
+      currentBranchRemoteCommitDelta = diffStat;
+    });
   }
 
   function getFileChanges(commit_id: string) {
@@ -281,6 +291,9 @@
   <Titlebar title={location == undefined ? "" : getGitName(location)} />
 </div>
 
+  <ErrorToast bind:message={error} />
+  
+
 <DialogBox bind:dialog={newBranchDialog}>
   <div class="flex flex-col m-8">
     <div class="flex w-full max-w-sm flex-col gap-1.5">
@@ -318,11 +331,13 @@
       <div class="overflow-auto-style flex flex-col">
         <CollapsibleSection title="Local Branch" defaultCollapsed={false}>
           <div class="ml-3 flex flex-col">
-            <BranchList branchList={localBranchList} 
-            bind:location
-            bind:selectedBranch
-            selectBranch={checkoutBranch}
-            callBack={refetchBranchs} />
+            <BranchList
+              branchList={localBranchList}
+              bind:location
+              bind:selectedBranch
+              selectBranch={checkoutBranch}
+              callBack={refetchBranchs}
+            />
           </div>
         </CollapsibleSection>
 
@@ -391,8 +406,8 @@
           {selectedBranch}
         />
 
-        <Pull 
-        location={location ?? ""}
+        <Pull
+          location={location ?? ""}
           branchList={localBranchList}
           remoteList={remotesList}
           {selectedBranch}
@@ -403,7 +418,6 @@
         <div class="p-2">
           {currentBranchRemoteCommitDelta[1]} to pull
         </div>
-        
       </div>
       <div class="flex h-1/10 tab-view-area">
         <TabSelect
@@ -531,7 +545,7 @@
     height: 30px;
   }
 
-  .branch-area{
+  .branch-area {
     width: 20vw;
   }
 
@@ -539,7 +553,6 @@
     display: flex;
     height: 99%;
     border-radius: 5px;
-    background: #0F0F10;
   }
 
   .commit-changes {
@@ -550,13 +563,12 @@
 
   .commit-message-area {
     width: 50%;
-    height: 100%;    
+    height: 100%;
   }
 
-  .tab-view-area{
-    background: #151518;
+  .tab-view-area {
+    background: var(--accent);
     height: 48px;
-    border: solid 1px #27272a;
     border-radius: 4px;
   }
 
@@ -571,7 +583,8 @@
 
   .main-area {
     width: -webkit-fill-available;
-    height: calc(100% - 85px)
+    height: calc(100% - 85px);
+    background: var(--accent);
   }
 
   .commit-message {
@@ -585,7 +598,7 @@
   }
 
   .commit-message:hover {
-    background: #ffffff40;
+    background: var(--hover);
   }
 
   .commit-message-info {
@@ -610,7 +623,7 @@
   }
 
   .commit-file-path:hover {
-    background: #ffffff40;
+    background: var(--hover);
   }
 
   .change-files {
