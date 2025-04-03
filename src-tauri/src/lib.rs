@@ -476,9 +476,6 @@ fn get_remote_local_drift(repo_location: String, branch_name: String) -> (usize,
 
 #[tauri::command]
 fn push_to_remote(app: AppHandle, repo_location: String, branch_name: String, remote: String) {
-
-    error_emitter(app, "push-failed to push to remote: {}".to_string());
-    return;
     let repo = Repository::open(repo_location).unwrap();
     let mut origin = repo.find_remote(&remote).unwrap();
 
