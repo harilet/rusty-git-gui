@@ -16,6 +16,7 @@
   import TabSelect from "$lib/ui-components/tabSelect.svelte";
   import CollapsibleSection from "$lib/ui-components/collapsibleSection.svelte";
     import Pull from "./pull.svelte";
+    import BranchList from "./branchList.svelte";
 
   let location: string | null;
   let localBranchList: any[] = [];
@@ -78,9 +79,11 @@
     invoke("get_branches", { repoLocation: location }).then(function (
       data: any,
     ) {
+      let tempLocalBranchList: any[]=[];
       for (let i = 0; i < data["branches"]["local"].length; i++) {
-        localBranchList = [...localBranchList, data["branches"]["local"][i]];
+        tempLocalBranchList = [...tempLocalBranchList, data["branches"]["local"][i]];
       }
+      localBranchList=tempLocalBranchList;
       for (let i = 0; i < data["branches"]["remote"].length; i++) {
         remoteBranchList = [...remoteBranchList, data["branches"]["remote"][i]];
       }
@@ -314,15 +317,13 @@
       </div>
       <div class="overflow-auto-style flex flex-col">
         <CollapsibleSection title="Local Branch" defaultCollapsed={false}>
-          {#each localBranchList as branch}
-            <BranchItem
-              {branch}
-              bind:location
-              bind:selectedBranch
-              {selectBranch}
-              callBack={refetchBranchs}
-            />
-          {/each}
+          <div class="ml-3 flex flex-col">
+            <BranchList branchList={localBranchList} 
+            bind:location
+            bind:selectedBranch
+            selectBranch={checkoutBranch}
+            callBack={refetchBranchs} />
+          </div>
         </CollapsibleSection>
 
         <CollapsibleSection title="Remote Branch">
@@ -330,6 +331,7 @@
             <BranchItem
               type="remote"
               {branch}
+              branchName={branch}
               bind:location
               bind:selectedBranch
               selectBranch={checkoutBranch}

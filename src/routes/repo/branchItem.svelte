@@ -1,5 +1,6 @@
 <script lang="ts">
   export let branch;
+  export let branchName;
   export let location: string | null;
   export let selectedBranch;
   export let callBack: () => void;
@@ -59,7 +60,7 @@
     on:dblclick={() => selectBranch(branch)}
     class="branch-name {selectedBranch == branch ? 'branch-selected' : ''}"
   >
-    {branch}
+    {branchName}
   </button>
 </ContextMenu>
 
