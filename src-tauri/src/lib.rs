@@ -52,6 +52,7 @@ fn clone_repo(app: AppHandle, repo_url: String, repo_location: String) {
         match result {
             Ok(_) => {}
             Err(_e) => {
+                error_emitter(app.clone(), format!("Clone Failed: {}", _e));
                 app.emit("clone-complete", "failure").unwrap();
             }
         }
@@ -411,11 +412,14 @@ fn rename_branch(repo_location: String, branch_name: String, new_branch_name: St
 }
 
 #[tauri::command]
-fn get_config(repo_location: String, key_name: String) -> String {
+fn get_config(app:AppHandle, repo_location: String, key_name: String) -> String {
     let repo = Repository::open(repo_location).unwrap();
     match repo.config().unwrap().get_string(&key_name) {
         Ok(data) => return data,
-        Err(_) => return "".to_string(),
+        Err(_e) => {
+            error_emitter(app.clone(), format!("Get Config Failed: {}", _e));
+            return "".to_string();
+        },
     }
 }
 
@@ -447,7 +451,7 @@ fn add_remote(repo_location: String, remote_name: String, remote_url: String) {
 }
 
 #[tauri::command]
-fn get_remote_local_drift(repo_location: String, branch_name: String) -> (usize, usize) {
+fn get_remote_local_drift(app:AppHandle,repo_location: String, branch_name: String) -> (usize, usize) {
     let repo = Repository::open(repo_location).unwrap();
 
     let head = repo.revparse_single(&branch_name).unwrap().id();
@@ -458,17 +462,16 @@ fn get_remote_local_drift(repo_location: String, branch_name: String) -> (usize,
             let (upstream, _) = data;
             return match repo.graph_ahead_behind(head, upstream.id()) {
                 Ok((commits_ahead, commits_behind)) => {
-                    println!("{:?}", commits_behind);
                     (commits_ahead, commits_behind)
                 }
                 Err(e) => {
-                    println!("{:#?}", e);
+                    error_emitter(app.clone(), format!("Remote Local Drift Failed: {}", e));
                     return (0, 0);
                 }
             };
         }
         Err(e) => {
-            println!("{:#?}", e);
+            error_emitter(app.clone(), format!("Remote Local Drift Failed: {}", e));
             (0, 0)
         }
     };
@@ -488,12 +491,6 @@ fn push_to_remote(app: AppHandle, repo_location: String, branch_name: String, re
     let mut remote_callbacks = git2::RemoteCallbacks::new();
     remote_callbacks.credentials(|_url, _username_from_url, _allowed_types| {
         git2::Cred::ssh_key_from_agent(_username_from_url.unwrap())
-    });
-
-    remote_callbacks.certificate_check(|_str1, str2| {
-        println!("certificate check");
-        println!("{:#?}", str2);
-        Ok(git2::CertificateCheckStatus::CertificateOk)
     });
 
     let mut push_options = git2::PushOptions::new();
